@@ -25,11 +25,11 @@ func generateShortID() string {
 
 func handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		contentType := r.Header.Get("Content-Type")
-		if !strings.Contains(contentType, "text/plain") {
-			http.Error(w, "Неверный Content-Type", http.StatusBadRequest)
-			return
-		}
+		// contentType := r.Header.Get("Content-Type")
+		// if !strings.Contains(contentType, "text/plain") {
+		// 	http.Error(w, "Неверный Content-Type", http.StatusBadRequest)
+		// 	return
+		// }
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
