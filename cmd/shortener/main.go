@@ -26,7 +26,7 @@ func generateShortID() string {
 func handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		contentType := r.Header.Get("Content-Type")
-		if !strings.HasPrefix(contentType, "text/plain") {
+		if !strings.Contains(contentType, "text/plain") {
 			http.Error(w, "Неверный Content-Type", http.StatusBadRequest)
 			return
 		}
