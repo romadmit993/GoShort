@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -15,23 +15,18 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const shortIDLength = 6
 
 func generateShortID() string {
-	rand.Seed(time.Now().UnixNano())
+	src := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(src)
+
 	shortID := make([]byte, shortIDLength)
 	for i := range shortID {
-		shortID[i] = charset[rand.Intn(len(charset))]
+		shortID[i] = charset[r.Intn(len(charset))]
 	}
 	return string(shortID)
 }
 
-// Обработчик для POST-запросов
 func handlePost(w http.ResponseWriter, r *http.Request) {
-	// contentType := r.Header.Get("Content-Type")
-	// if !strings.Contains(contentType, "text/plain") {
-	// 	http.Error(w, "Неверный Content-Type", http.StatusBadRequest)
-	// 	return
-	// }
-
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
 		return
@@ -50,7 +45,6 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, shortURL)
 }
 
-// Обработчик для GET-запросов
 func handleGet(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/")
 	originalURL, exists := urlStore[id]
@@ -62,7 +56,6 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-// Главный обработчик, который перенаправляет запросы на handlePost или handleGet
 func handle(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
