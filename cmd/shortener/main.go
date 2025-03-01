@@ -19,8 +19,8 @@ var Confing struct {
 }
 
 type EnviromentVariables struct {
-	SERVER_ADDRESS string `env:"SERVER_ADDRESS"`
-	BASE_URL       string `env:"BASE_URL"`
+	server_address string `env:"SERVER_ADDRESS"`
+	base_url       string `env:"BASE_URL"`
 }
 
 var urlStore = map[string]string{}
