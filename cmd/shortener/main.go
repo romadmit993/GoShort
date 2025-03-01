@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+	//	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -30,18 +30,18 @@ const shortIDLength = 6
 
 // Функция для парсинга флагов
 func ParseFlags() {
-	var cfg EnviromentVariables
-	err := env.Parse(&cfg)
-	if err == nil {
-		Confing.localServer = cfg.SERVER_ADDRESS
-		Confing.baseAddress = cfg.BASE_URL
-	} else {
+	//	var cfg EnviromentVariables
+	//	err := env.Parse(&cfg)
+	//	if err == nil {
+	//		Confing.localServer = cfg.SERVER_ADDRESS
+	//		Confing.baseAddress = cfg.BASE_URL
+	//	} else {
 
-		flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
-		flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
-		flag.Parse()
+	flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
+	flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
+	flag.Parse()
 
-	}
+	//	}
 	// Убедимся, что baseAddress заканчивается на "/"
 	if !strings.HasSuffix(Confing.baseAddress, "/") {
 		Confing.baseAddress += "/"
