@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -26,6 +27,11 @@ func ParseFlags() {
 	flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
 	flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
 	flag.Parse()
+
+	// Убедимся, что baseAddress заканчивается на "/"
+	if !strings.HasSuffix(Confing.baseAddress, "/") {
+		Confing.baseAddress += "/"
+	}
 }
 
 func generateShortID() string {
@@ -52,7 +58,7 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortID := generateShortID()
 	urlStore[shortID] = originalURL
-	shortURL := fmt.Sprintf("%s%s", Confing.baseAddress, shortID)
+	shortURL := fmt.Sprintf("%s%s", Confing.baseAddress, shortID) // Корректный URL
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
