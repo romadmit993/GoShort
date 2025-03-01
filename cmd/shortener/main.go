@@ -9,12 +9,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 )
 
 var Confing struct {
 	localServer string
 	baseAddress string
+}
+
+type EnviromentVariables struct {
+	SERVER_ADDRESS string `env:"SERVER_ADDRESS"`
+	BASE_URL       string `env:"BASE_URL"`
 }
 
 var urlStore = map[string]string{}
@@ -24,14 +30,23 @@ const shortIDLength = 6
 
 // Функция для парсинга флагов
 func ParseFlags() {
-	flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
-	flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
-	flag.Parse()
+	var cfg EnviromentVariables
+	err := env.Parse(&cfg)
+	if err == nil {
+		Confing.localServer = cfg.SERVER_ADDRESS
+		Confing.baseAddress = cfg.BASE_URL
+	} else {
 
+		flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
+		flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
+		flag.Parse()
+
+	}
 	// Убедимся, что baseAddress заканчивается на "/"
 	if !strings.HasSuffix(Confing.baseAddress, "/") {
 		Confing.baseAddress += "/"
 	}
+
 }
 
 func generateShortID() string {
