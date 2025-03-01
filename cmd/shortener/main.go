@@ -1,18 +1,33 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
+
+var Confing struct {
+	localServer string
+	baseAddress string
+}
 
 var urlStore = map[string]string{}
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const shortIDLength = 6
+
+// Функция для парсинга флагов
+func ParseFlags() {
+	flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
+	flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
+	flag.Parse()
+}
 
 func generateShortID() string {
 	src := rand.NewSource(time.Now().UnixNano())
@@ -38,7 +53,7 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortID := generateShortID()
 	urlStore[shortID] = originalURL
-	shortURL := fmt.Sprintf("http://localhost:8080/%s", shortID)
+	shortURL := fmt.Sprintf("%s%s", Confing.baseAddress, shortID)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
@@ -66,14 +81,12 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 	}
 }
-
+func testRouter() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/", handle)
+	return r
+}
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handle)
-
-	fmt.Println("Сервер запущен на http://localhost:8080")
-	err := http.ListenAndServe(":8080", mux)
-	if err != nil {
-		panic(err)
-	}
+	ParseFlags()
+	http.ListenAndServe(Confing.localServer, testRouter())
 }
