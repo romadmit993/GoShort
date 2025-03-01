@@ -78,7 +78,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		handleGet(w, r)
 	default:
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		//		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 	}
 }
 func testRouter() chi.Router {
