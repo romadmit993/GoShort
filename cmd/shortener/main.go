@@ -1,53 +1,20 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
-	"strings"
 	"time"
 
 	//	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 )
 
-var Confing struct {
-	localServer string
-	baseAddress string
-}
-
-type EnviromentVariables struct {
-	serveraddress string `env:"SERVER_ADDRESS"`
-	baseurl       string `env:"BASE_URL"`
-}
-
 var urlStore = map[string]string{}
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const shortIDLength = 6
-
-// Функция для парсинга флагов
-func ParseFlags() {
-	//	var cfg EnviromentVariables
-	//	err := env.Parse(&cfg)
-	//	if err == nil {
-	//		Confing.localServer = cfg.SERVER_ADDRESS
-	//		Confing.baseAddress = cfg.BASE_URL
-	//	} else {
-
-	flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
-	flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
-	flag.Parse()
-
-	//	}
-	// Убедимся, что baseAddress заканчивается на "/"
-	if !strings.HasSuffix(Confing.baseAddress, "/") {
-		Confing.baseAddress += "/"
-	}
-
-}
 
 func generateShortID() string {
 	src := rand.NewSource(time.Now().UnixNano())
@@ -73,7 +40,7 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortID := generateShortID()
 	urlStore[shortID] = originalURL
-	shortURL := fmt.Sprintf("%s%s", Confing.baseAddress, shortID) // Корректный URL
+	shortURL := fmt.Sprintf("%s%s", Confing.BaseAddress, shortID) // Корректный URL
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
@@ -100,5 +67,5 @@ func testRouter() chi.Router {
 
 func main() {
 	ParseFlags()
-	http.ListenAndServe(Confing.localServer, testRouter())
+	http.ListenAndServe(Confing.LocalServer, testRouter())
 }
