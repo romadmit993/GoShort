@@ -1,29 +1,40 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
-	"math/rand"
+	"log"
 	"net/http"
-	"time"
+	"net/url"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 )
 
-var urlStore = map[string]string{}
+var (
+	urlStore = make(map[string]string)
+	storeMux sync.RWMutex
+)
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-const shortIDLength = 6
+const (
+	charset       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	shortIDLength = 6
+)
 
 func generateShortID() string {
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-
-	shortID := make([]byte, shortIDLength)
-	for i := range shortID {
-		shortID[i] = charset[r.Intn(len(charset))]
+	b := make([]byte, shortIDLength)
+	_, _ = rand.Read(b)
+	for i := range b {
+		b[i] = charset[int(b[i])%len(charset)]
 	}
-	return string(shortID)
+	return string(b)
+}
+
+// isValidURL проверяет, является ли строка корректным URL.
+func isValidURL(rawURL string) bool {
+	_, err := url.ParseRequestURI(rawURL)
+	return err == nil
 }
 
 func handlePost(w http.ResponseWriter, r *http.Request) {
@@ -35,22 +46,29 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	originalURL := string(body)
-	fmt.Println("Получен URL:", originalURL)
+	if !isValidURL(originalURL) {
+		http.Error(w, "Некорректный URL", http.StatusBadRequest)
+		return
+	}
 
 	shortID := generateShortID()
+	storeMux.Lock()
 	urlStore[shortID] = originalURL
-	shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID) // Корректный URL
+	storeMux.Unlock()
 
+	shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprint(w, shortURL)
 }
 
 func handleGet(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id") // Извлекаем ID из URL
+	id := chi.URLParam(r, "id")
+	storeMux.RLock()
 	originalURL, exists := urlStore[id]
+	storeMux.RUnlock()
 	if !exists {
-		http.Error(w, "Сокращённый URL не найден", http.StatusBadRequest)
+		http.Error(w, "Сокращённый URL не найден", http.StatusNotFound)
 		return
 	}
 	w.Header().Set("Location", originalURL)
@@ -59,12 +77,15 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 
 func testRouter() chi.Router {
 	r := chi.NewRouter()
-	r.Post("/", handlePost)   // Обработка POST-запросов
-	r.Get("/{id}", handleGet) // Обработка GET-запросов для сокращённых URL
+	r.Post("/", handlePost)
+	r.Get("/{id}", handleGet)
 	return r
 }
 
 func main() {
 	ParseFlags()
-	http.ListenAndServe(Config.localServer, testRouter())
+	log.Printf("Сервер запущен на %s", Config.localServer)
+	if err := http.ListenAndServe(Config.localServer, testRouter()); err != nil {
+		log.Fatalf("Ошибка при запуске сервера: %s", err)
+	}
 }
