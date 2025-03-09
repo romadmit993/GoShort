@@ -1,13 +1,15 @@
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"math/rand"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -22,13 +24,14 @@ const (
 	shortIDLength = 6
 )
 
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func generateShortID() string {
-	b := make([]byte, shortIDLength)
-	_, _ = rand.Read(b)
-	for i := range b {
-		b[i] = charset[int(b[i])%len(charset)]
+	shortID := make([]byte, shortIDLength)
+	for i := range shortID {
+		shortID[i] = charset[r.Intn(len(charset))]
 	}
-	return string(b)
+	return string(shortID)
 }
 
 // isValidURL проверяет, является ли строка корректным URL.

@@ -26,7 +26,7 @@ var cfg EnviromentVariables
 func ParseFlags() {
 	// Загружаем переменные окружения.
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatalf("Ошибка при парсинге переменных окружения: %s", err)
+		log.Printf("Ошибка при парсинге переменных окружения: %s", err)
 	}
 
 	// Устанавливаем значения по умолчанию для флагов.
