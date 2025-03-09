@@ -2,35 +2,36 @@ package main
 
 import (
 	"flag"
+	"log"
 	"strings"
+
+	"github.com/caarlos0/env/v6"
 )
 
-var Confing struct {
-	LocalServer string
-	BaseAddress string
+var Config struct {
+	localServer string
+	baseAddress string
 }
 
 type EnviromentVariables struct {
-	Serveraddress string `env:"SERVER_ADDRESS"`
-	Baseurl       string `env:"BASE_URL"`
+	serverAddress string `env:"SERVER_ADDRESS"`
+	baseUrl       string `env:"BASE_URL"`
 }
 
-func ParseFlags() {
-	//	var cfg EnviromentVariables
-	//	err := env.Parse(&cfg)
-	//	if err == nil {
-	//		Confing.localServer = cfg.SERVER_ADDRESS
-	//		Confing.baseAddress = cfg.BASE_URL
-	//	} else {
+var cfg EnviromentVariables
 
-	flag.StringVar(&Confing.LocalServer, "a", "localhost:8080", "start server")
-	flag.StringVar(&Confing.BaseAddress, "b", "http://localhost:8080/", "shorter URL")
+func ParseFlags() {
+
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalf("Ошибка при парсинге переменных окружения: %s", err)
+	}
+
+	flag.StringVar(&Config.localServer, "a", "localhost:8080", "start server")
+	flag.StringVar(&Config.baseAddress, "b", "http://localhost:8080/", "shorter URL")
 	flag.Parse()
 
-	//	}
-	// Убедимся, что baseAddress заканчивается на "/"
-	if !strings.HasSuffix(Confing.BaseAddress, "/") {
-		Confing.BaseAddress += "/"
+	if !strings.HasSuffix(Config.baseAddress, "/") {
+		Config.baseAddress += "/"
 	}
 
 }

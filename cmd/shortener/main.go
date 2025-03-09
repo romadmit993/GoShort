@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	//	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -40,7 +39,7 @@ func handlePost(w http.ResponseWriter, r *http.Request) {
 
 	shortID := generateShortID()
 	urlStore[shortID] = originalURL
-	shortURL := fmt.Sprintf("%s%s", Confing.BaseAddress, shortID) // Корректный URL
+	shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID) // Корректный URL
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
@@ -67,5 +66,5 @@ func testRouter() chi.Router {
 
 func main() {
 	ParseFlags()
-	http.ListenAndServe(Confing.LocalServer, testRouter())
+	http.ListenAndServe(Config.localServer, testRouter())
 }
