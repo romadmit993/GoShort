@@ -13,7 +13,7 @@ func TestHandlePost(t *testing.T) {
 	req.Header.Set("Content-Type", "text/plain")
 
 	w := httptest.NewRecorder()
-	handlePost(w, req)
+	handlePost()(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
@@ -30,7 +30,7 @@ func TestHandleGet(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/"+shortID, nil)
 	w := httptest.NewRecorder()
-	handleGet(w, req)
+	handleGet()(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа

@@ -49,7 +49,7 @@ func isValidURL(rawURL string) bool {
 	return err == nil
 }
 
-func handlePost(w http.ResponseWriter, r *http.Request) http.HandlerFunc {
+func handlePost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -77,7 +77,7 @@ func handlePost(w http.ResponseWriter, r *http.Request) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func handleGet(w http.ResponseWriter, r *http.Request) http.HandlerFunc {
+func handleGet() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		storeMux.RLock()
