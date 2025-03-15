@@ -21,17 +21,6 @@ func TestHandlePost(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated {
 		t.Errorf("Ожидался статус-код %d, получен %d", http.StatusCreated, resp.StatusCode)
 	}
-
-	//	body, err := io.ReadAll(resp.Body)
-	//	if err != nil {
-	//		t.Fatalf("Ошибка при чтении тела ответа: %v", err)
-	//	}
-
-	// shortURL := string(body)
-	//
-	//	if !strings.HasPrefix(shortURL, "http://localhost:8080/") {
-	//		t.Errorf("Сокращенный URL имеет неверный формат: %s", shortURL)
-	//	}
 }
 
 func TestHandleGet(t *testing.T) {
@@ -45,14 +34,4 @@ func TestHandleGet(t *testing.T) {
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
-
-	//	if resp.StatusCode != http.StatusTemporaryRedirect {
-	//		t.Errorf("Ожидался статус-код %d, получен %d", http.StatusTemporaryRedirect, resp.StatusCode)
-	//	}
-
-	// location := resp.Header.Get("Location")
-	//
-	//	if location != originalURL {
-	//		t.Errorf("Ожидался Location %s, получен %s", originalURL, location)
-	//	}
 }
