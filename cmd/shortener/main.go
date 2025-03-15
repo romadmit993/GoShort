@@ -1,58 +1,42 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
-	"strings"
+	"net/url"
+	"sync"
 	"time"
 
-	//	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
-var Confing struct {
-	localServer string
-	baseAddress string
-}
-
-type EnviromentVariables struct {
-	server_address string `env:"SERVER_ADDRESS"`
-	base_url       string `env:"BASE_URL"`
-}
-
-var urlStore = map[string]string{}
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-const shortIDLength = 6
-
-// Функция для парсинга флагов
-func ParseFlags() {
-	//	var cfg EnviromentVariables
-	//	err := env.Parse(&cfg)
-	//	if err == nil {
-	//		Confing.localServer = cfg.SERVER_ADDRESS
-	//		Confing.baseAddress = cfg.BASE_URL
-	//	} else {
-
-	flag.StringVar(&Confing.localServer, "a", "localhost:8080", "start server")
-	flag.StringVar(&Confing.baseAddress, "b", "http://localhost:8080/", "shorter URL")
-	flag.Parse()
-
-	//	}
-	// Убедимся, что baseAddress заканчивается на "/"
-	if !strings.HasSuffix(Confing.baseAddress, "/") {
-		Confing.baseAddress += "/"
+type (
+	responseData struct {
+		status int
+		size   int
 	}
+	loggingResponseWriter struct {
+		http.ResponseWriter
+		responseData *responseData
+	}
+)
 
-}
+var (
+	urlStore = make(map[string]string)
+	storeMux sync.RWMutex
+	sugar    zap.SugaredLogger
+	r        = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
+const (
+	charset       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	shortIDLength = 6
+)
 
 func generateShortID() string {
-	src := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(src)
-
 	shortID := make([]byte, shortIDLength)
 	for i := range shortID {
 		shortID[i] = charset[r.Intn(len(charset))]
@@ -60,45 +44,111 @@ func generateShortID() string {
 	return string(shortID)
 }
 
-func handlePost(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	originalURL := string(body)
-	fmt.Println("Получен URL:", originalURL)
-
-	shortID := generateShortID()
-	urlStore[shortID] = originalURL
-	shortURL := fmt.Sprintf("%s%s", Confing.baseAddress, shortID) // Корректный URL
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprint(w, shortURL)
+func isValidURL(rawURL string) bool {
+	_, err := url.ParseRequestURI(rawURL)
+	return err == nil
 }
 
-func handleGet(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id") // Извлекаем ID из URL
-	originalURL, exists := urlStore[id]
-	if !exists {
-		http.Error(w, "Сокращённый URL не найден", http.StatusBadRequest)
-		return
+func handlePost() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		originalURL := string(body)
+		if !isValidURL(originalURL) {
+			http.Error(w, "Некорректный URL", http.StatusBadRequest)
+			return
+		}
+
+		shortID := generateShortID()
+		storeMux.Lock()
+		urlStore[shortID] = originalURL
+		storeMux.Unlock()
+
+		shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, shortURL)
 	}
-	w.Header().Set("Location", originalURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	return http.HandlerFunc(fn)
+}
+
+func handleGet() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		storeMux.RLock()
+		originalURL, exists := urlStore[id]
+		storeMux.RUnlock()
+		if !exists {
+			http.Error(w, "Сокращённый URL не найден", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Location", originalURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	}
+	return http.HandlerFunc(fn)
 }
 
 func testRouter() chi.Router {
 	r := chi.NewRouter()
-	r.Post("/", handlePost)   // Обработка POST-запросов
-	r.Get("/{id}", handleGet) // Обработка GET-запросов для сокращённых URL
+	r.Post("/", withLogging(handlePost()))
+	r.Get("/{id}", withLogging(handleGet()))
 	return r
 }
 
 func main() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+
+	defer logger.Sync()
+	sugar = *logger.Sugar()
+
 	ParseFlags()
-	http.ListenAndServe(Confing.localServer, testRouter())
+	sugar.Infow(
+		"Сервер запущен на", Config.localServer,
+	)
+
+	if err := http.ListenAndServe(Config.localServer, testRouter()); err != nil {
+		sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
+	}
+}
+
+func withLogging(h http.HandlerFunc) http.HandlerFunc {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		responseData := &responseData{
+			status: 0,
+			size:   0,
+		}
+		lw := loggingResponseWriter{
+			ResponseWriter: w,
+			responseData:   responseData,
+		}
+		h.ServeHTTP(&lw, r)
+		duration := time.Since(start)
+		sugar.Infoln(
+			"uri", r.RequestURI,
+			"method", r.Method,
+			"status", responseData.status,
+			"duration", duration,
+			"size", responseData.size,
+		)
+	}
+	return http.HandlerFunc(logFn)
+}
+func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size
+	return size, err
+}
+
+func (r *loggingResponseWriter) WriteHeader(statusCode int) {
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.responseData.status = statusCode
 }
