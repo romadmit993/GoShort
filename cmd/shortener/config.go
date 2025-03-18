@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"log"
-	"strings"
+
+	//	"strings"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -31,7 +32,7 @@ func ParseFlags() {
 
 	// Устанавливаем значения по умолчанию для флагов.
 	flag.StringVar(&Config.localServer, "a", "localhost:8080", "адрес запуска HTTP-сервера")
-	flag.StringVar(&Config.baseAddress, "b", "http://localhost:8080/", "базовый адрес сокращённого URL")
+	flag.StringVar(&Config.baseAddress, "b", "http://localhost:8080", "базовый адрес сокращённого URL")
 	flag.Parse()
 
 	// Приоритет: переменные окружения > флаги.
@@ -43,7 +44,7 @@ func ParseFlags() {
 	}
 
 	// Убедимся, что BaseAddress заканчивается на "/".
-	if !strings.HasSuffix(Config.baseAddress, "/") {
-		Config.baseAddress += "/"
-	}
+	//	if !strings.HasSuffix(Config.baseAddress, "/") {
+	//		Config.baseAddress += "/"
+	//	}
 }
