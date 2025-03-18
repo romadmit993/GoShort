@@ -84,18 +84,21 @@ func handleShortenPost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		var apiShorten models.Shorten
 		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
 			return
 		}
 		defer r.Body.Close()
+
 		// Проверяем, что URL не пустой и корректен
 		if apiShorten.URL == "" || !isValidURL(apiShorten.URL) {
 			http.Error(w, "Некорректный URL", http.StatusBadRequest)
 			return
 		}
 
+		// Генерируем короткий ID
 		shortID := generateShortID()
 
+		// Сохраняем соответствие короткого ID и оригинального URL
 		storeMux.Lock()
 		urlStore[shortID] = apiShorten.URL
 		storeMux.Unlock()
@@ -115,7 +118,6 @@ func handleShortenPost() http.HandlerFunc {
 			http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
 		}
 	}
-
 	return http.HandlerFunc(fn)
 }
 
