@@ -9,6 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
+	"romadmit993/GoShort/internal/models"
+
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -25,10 +28,12 @@ type (
 )
 
 var (
-	urlStore = make(map[string]string)
-	storeMux sync.RWMutex
-	sugar    zap.SugaredLogger
-	r        = rand.New(rand.NewSource(time.Now().UnixNano()))
+	urlStore      = make(map[string]string)
+	urlApiShorten = make(map[string]string)
+	storeMux      sync.RWMutex
+	sugar         zap.SugaredLogger
+	r             = rand.New(rand.NewSource(time.Now().UnixNano()))
+	localhost     = "http://localhost:8080/"
 )
 
 const (
@@ -77,6 +82,24 @@ func handlePost() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func handleShortenPost() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		var apiShorten models.Shorten
+		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+		shortID := generateShortID()
+		localhost += shortID
+		urlApiShorten["result"] = localhost
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, urlApiShorten)
+	}
+	return http.HandlerFunc(fn)
+}
+
 func handleGet() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
@@ -96,6 +119,7 @@ func handleGet() http.HandlerFunc {
 func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", withLogging(handlePost()))
+	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
 	return r
 }
