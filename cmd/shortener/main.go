@@ -28,12 +28,10 @@ type (
 )
 
 var (
-	urlStore      = make(map[string]string)
-	urlAPIShorten = make(map[string]string)
-	storeMux      sync.RWMutex
-	sugar         zap.SugaredLogger
-	r             = rand.New(rand.NewSource(time.Now().UnixNano()))
-	localhost     = "http://localhost:8080/"
+	urlStore = make(map[string]string)
+	storeMux sync.RWMutex
+	sugar    zap.SugaredLogger
+	r        = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 const (
@@ -90,13 +88,34 @@ func handleShortenPost() http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
+		// Проверяем, что URL не пустой и корректен
+		if apiShorten.URL == "" || !isValidURL(apiShorten.URL) {
+			http.Error(w, "Некорректный URL", http.StatusBadRequest)
+			return
+		}
+
 		shortID := generateShortID()
-		localhost += shortID
-		urlAPIShorten["result"] = localhost
+
+		storeMux.Lock()
+		urlStore[shortID] = apiShorten.URL
+		storeMux.Unlock()
+
+		// Формируем короткий URL
+		shortURL := fmt.Sprintf("%s/%s", Config.baseAddress, shortID)
+
+		// Формируем ответ
+		response := models.Shorten{
+			Result: shortURL,
+		}
+
+		// Отправляем ответ
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, urlAPIShorten)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+		}
 	}
+
 	return http.HandlerFunc(fn)
 }
 
