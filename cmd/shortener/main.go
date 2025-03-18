@@ -156,9 +156,7 @@ func main() {
 	sugar = *logger.Sugar()
 
 	ParseFlags()
-	sugar.Infow(
-		"Сервер запущен на", Config.localServer,
-	)
+	sugar.Infow("Сервер запущен", "address", Config.localServer)
 
 	if err := http.ListenAndServe(Config.localServer, testRouter()); err != nil {
 		sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
