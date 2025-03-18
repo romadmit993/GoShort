@@ -40,7 +40,7 @@ func TestHandleGet(t *testing.T) {
 }
 
 func Test_handleShortenPost(t *testing.T) {
-	requestBody := models.Shorten{Url: "http://practicum.yandex.ru"}
+	requestBody := models.Shorten{URL: "http://practicum.yandex.ru"}
 	jsonBody, _ := json.Marshal(requestBody)
 	req, err := http.NewRequest("POST", "/api/shorten", bytes.NewBuffer(jsonBody))
 	if err != nil {
