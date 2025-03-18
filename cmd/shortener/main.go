@@ -29,7 +29,7 @@ type (
 
 var (
 	urlStore      = make(map[string]string)
-	urlApiShorten = make(map[string]string)
+	urlAPIShorten = make(map[string]string)
 	storeMux      sync.RWMutex
 	sugar         zap.SugaredLogger
 	r             = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -92,10 +92,10 @@ func handleShortenPost() http.HandlerFunc {
 		defer r.Body.Close()
 		shortID := generateShortID()
 		localhost += shortID
-		urlApiShorten["result"] = localhost
+		urlAPIShorten["result"] = localhost
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, urlApiShorten)
+		fmt.Fprint(w, urlAPIShorten)
 	}
 	return http.HandlerFunc(fn)
 }
