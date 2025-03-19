@@ -124,6 +124,10 @@ func handleShortenPost() http.HandlerFunc {
 func handleGet() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
+		if id == "" {
+			http.Error(w, "ID не может быть пустым", http.StatusBadRequest)
+			return
+		}
 		storeMux.RLock()
 		originalURL, exists := urlStore[id]
 		storeMux.RUnlock()
