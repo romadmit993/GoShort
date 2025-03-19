@@ -141,7 +141,7 @@ func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
-	r.Get("{id}", withLogging(handleGet()))
+	r.Get("/{id}", withLogging(handleGet()))
 	return r
 }
 
