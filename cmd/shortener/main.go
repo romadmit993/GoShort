@@ -13,6 +13,7 @@ import (
 	"romadmit993/GoShort/internal/models"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 )
 
@@ -143,6 +144,7 @@ func handleGet() http.HandlerFunc {
 
 func testRouter() chi.Router {
 	r := chi.NewRouter()
+	r.Use(middleware.CleanPath) // Добавляем middleware для нормализации пути
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
