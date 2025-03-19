@@ -9,7 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"encoding/json"
+	"romadmit993/GoShort/internal/models"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 )
 
@@ -77,9 +81,54 @@ func handlePost() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func handleShortenPost() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		var apiShorten models.Shorten
+		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
+			http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Проверяем, что URL не пустой и корректен
+		if apiShorten.URL == "" || !isValidURL(apiShorten.URL) {
+			http.Error(w, "Некорректный URL", http.StatusBadRequest)
+			return
+		}
+
+		// Генерируем короткий ID
+		shortID := generateShortID()
+
+		// Сохраняем соответствие короткого ID и оригинального URL
+		storeMux.Lock()
+		urlStore[shortID] = apiShorten.URL
+		storeMux.Unlock()
+
+		// Формируем короткий URL
+		shortURL := fmt.Sprintf("%s/%s", Config.baseAddress, shortID)
+
+		// Формируем ответ
+		response := models.Shorten{
+			Result: shortURL,
+		}
+
+		// Отправляем ответ
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+		}
+	}
+	return http.HandlerFunc(fn)
+}
+
 func handleGet() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
+		if id == "" {
+			http.Error(w, "ID не может быть пустым", http.StatusBadRequest)
+			return
+		}
 		storeMux.RLock()
 		originalURL, exists := urlStore[id]
 		storeMux.RUnlock()
@@ -95,7 +144,9 @@ func handleGet() http.HandlerFunc {
 
 func testRouter() chi.Router {
 	r := chi.NewRouter()
+	r.Use(middleware.CleanPath) // Добавляем middleware для нормализации пути
 	r.Post("/", withLogging(handlePost()))
+	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
 	return r
 }
@@ -111,9 +162,7 @@ func main() {
 	sugar = *logger.Sugar()
 
 	ParseFlags()
-	sugar.Infow(
-		"Сервер запущен на", Config.localServer,
-	)
+	sugar.Infow("Сервер запущен", "address", Config.localServer)
 
 	if err := http.ListenAndServe(Config.localServer, testRouter()); err != nil {
 		sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")

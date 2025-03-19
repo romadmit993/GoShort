@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+
 	"strings"
 
 	"github.com/caarlos0/env/v6"
