@@ -139,8 +139,8 @@ func handleGet() http.HandlerFunc {
 func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
-	//	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
-	r.Use(gzipHandle) // Добавляем middleware для сжатия
+	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
+	r.Use(gzipHandle)       // Добавляем middleware для сжатия
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
@@ -201,40 +201,6 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-// func ungzipMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
-// 			gz, err := gzip.NewReader(r.Body)
-// 			if err != nil {
-// 				http.Error(w, "Failed to decompress request", http.StatusBadRequest)
-// 				return
-// 			}
-// 			defer gz.Close()
-// 			r.Body = gz
-// 		}
-// 		next.ServeHTTP(w, r)
-// 	})
-// }
-// func gzipMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		// Проверяем поддержку gzip
-// 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-// 			next.ServeHTTP(w, r)
-// 			return
-// 		}
-
-// 		// Создаем обертку для ResponseWriter
-// 		gzw := gzipResponseWriter{
-// 			ResponseWriter: w,
-// 			gzipWriter:     gzip.NewWriter(w),
-// 		}
-// 		defer gzw.gzipWriter.Close()
-
-//			// Устанавливаем заголовки
-//			w.Header().Set("Content-Encoding", "gzip")
-//			next.ServeHTTP(gzw, r)
-//		})
-//	}
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -258,6 +224,20 @@ func gzipHandle(next http.Handler) http.Handler {
 			w.Header().Set("Content-Encoding", "gzip")
 			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+func ungzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+			gz, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(w, "Failed to decompress request", http.StatusBadRequest)
+				return
+			}
+			defer gz.Close()
+			r.Body = gz
 		}
 		next.ServeHTTP(w, r)
 	})
