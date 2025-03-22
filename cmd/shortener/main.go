@@ -1,7 +1,7 @@
 package main
 
 import (
-	//	"compress/gzip"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"romadmit993/GoShort/internal/models"
 
-	//	"strings"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +27,10 @@ type (
 	loggingResponseWriter struct {
 		http.ResponseWriter
 		responseData *responseData
+	}
+	gzipWriter struct {
+		http.ResponseWriter
+		Writer io.Writer
 	}
 )
 
@@ -136,7 +140,7 @@ func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
 	//	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
-	//	r.Use(gzipMiddleware)   // Добавляем middleware для сжатия
+	r.Use(gzipHandle) // Добавляем middleware для сжатия
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
@@ -226,23 +230,35 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 // 		}
 // 		defer gzw.gzipWriter.Close()
 
-// 		// Устанавливаем заголовки
-// 		w.Header().Set("Content-Encoding", "gzip")
-// 		next.ServeHTTP(gzw, r)
-// 	})
-// }
+//			// Устанавливаем заголовки
+//			w.Header().Set("Content-Encoding", "gzip")
+//			next.ServeHTTP(gzw, r)
+//		})
+//	}
+func (w gzipWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+func gzipHandle(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Сжимаем данные только для допустимых типов контента
+		contentType := w.Header().Get("Content-Type")
+		if strings.Contains(contentType, "application/json") ||
+			strings.Contains(contentType, "text/html") {
+			if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+				next.ServeHTTP(w, r)
+				return
+			}
+			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+			if err != nil {
+				io.WriteString(w, err.Error())
+				return
+			}
+			defer gz.Close()
 
-// type gzipResponseWriter struct {
-// 	http.ResponseWriter
-// 	gzipWriter *gzip.Writer
-// }
-
-// func (w gzipResponseWriter) Write(b []byte) (int, error) {
-// 	// Сжимаем данные только для допустимых типов контента
-// 	contentType := w.Header().Get("Content-Type")
-// 	if strings.Contains(contentType, "application/json") ||
-// 		strings.Contains(contentType, "text/html") {
-// 		return w.gzipWriter.Write(b)
-// 	}
-// 	return w.ResponseWriter.Write(b)
-// }
+			w.Header().Set("Content-Encoding", "gzip")
+			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
