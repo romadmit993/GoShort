@@ -1,16 +1,17 @@
 package main
 
 import (
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"romadmit993/GoShort/internal/models"
+	"strings"
 	"sync"
 	"time"
-
-	"encoding/json"
-	"romadmit993/GoShort/internal/models"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -89,30 +90,18 @@ func handleShortenPost() http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
-
-		// Проверяем, что URL не пустой и корректен
 		if apiShorten.URL == "" || !isValidURL(apiShorten.URL) {
 			http.Error(w, "Некорректный URL", http.StatusBadRequest)
 			return
 		}
-
-		// Генерируем короткий ID
 		shortID := generateShortID()
-
-		// Сохраняем соответствие короткого ID и оригинального URL
 		storeMux.Lock()
 		urlStore[shortID] = apiShorten.URL
 		storeMux.Unlock()
-
-		// Формируем короткий URL
 		shortURL := fmt.Sprintf("%s/%s", Config.baseAddress, shortID)
-
-		// Формируем ответ
 		response := models.Shorten{
 			Result: shortURL,
 		}
-
-		// Отправляем ответ
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -144,7 +133,9 @@ func handleGet() http.HandlerFunc {
 
 func testRouter() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.CleanPath) // Добавляем middleware для нормализации пути
+	r.Use(middleware.CleanPath)
+	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
+	r.Use(gzipMiddleware)   // Добавляем middleware для сжатия
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
@@ -172,6 +163,7 @@ func main() {
 func withLogging(h http.HandlerFunc) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+
 		responseData := &responseData{
 			status: 0,
 			size:   0,
@@ -192,6 +184,7 @@ func withLogging(h http.HandlerFunc) http.HandlerFunc {
 	}
 	return http.HandlerFunc(logFn)
 }
+
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
@@ -201,4 +194,53 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode
+}
+func ungzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+			gz, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(w, "Failed to decompress request", http.StatusBadRequest)
+				return
+			}
+			defer gz.Close()
+			r.Body = gz
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+func gzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Проверяем поддержку gzip
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Создаем обертку для ResponseWriter
+		gzw := gzipResponseWriter{
+			ResponseWriter: w,
+			gzipWriter:     gzip.NewWriter(w),
+		}
+		defer gzw.gzipWriter.Close()
+
+		// Устанавливаем заголовки
+		w.Header().Set("Content-Encoding", "gzip")
+		next.ServeHTTP(gzw, r)
+	})
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	gzipWriter *gzip.Writer
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	// Сжимаем данные только для допустимых типов контента
+	contentType := w.Header().Get("Content-Type")
+	if strings.Contains(contentType, "application/json") ||
+		strings.Contains(contentType, "text/html") {
+		return w.gzipWriter.Write(b)
+	}
+	return w.ResponseWriter.Write(b)
 }
