@@ -1,7 +1,7 @@
 package main
 
 import (
-	"compress/gzip"
+	//	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"romadmit993/GoShort/internal/models"
-	"strings"
+
+	//	"strings"
 	"sync"
 	"time"
 
@@ -134,8 +135,8 @@ func handleGet() http.HandlerFunc {
 func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
-	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
-	r.Use(gzipMiddleware)   // Добавляем middleware для сжатия
+	//	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
+	//	r.Use(gzipMiddleware)   // Добавляем middleware для сжатия
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
@@ -195,52 +196,53 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode
 }
-func ungzipMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
-			gz, err := gzip.NewReader(r.Body)
-			if err != nil {
-				http.Error(w, "Failed to decompress request", http.StatusBadRequest)
-				return
-			}
-			defer gz.Close()
-			r.Body = gz
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-func gzipMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Проверяем поддержку gzip
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			next.ServeHTTP(w, r)
-			return
-		}
 
-		// Создаем обертку для ResponseWriter
-		gzw := gzipResponseWriter{
-			ResponseWriter: w,
-			gzipWriter:     gzip.NewWriter(w),
-		}
-		defer gzw.gzipWriter.Close()
+// func ungzipMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+// 			gz, err := gzip.NewReader(r.Body)
+// 			if err != nil {
+// 				http.Error(w, "Failed to decompress request", http.StatusBadRequest)
+// 				return
+// 			}
+// 			defer gz.Close()
+// 			r.Body = gz
+// 		}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
+// func gzipMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		// Проверяем поддержку gzip
+// 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+// 			next.ServeHTTP(w, r)
+// 			return
+// 		}
 
-		// Устанавливаем заголовки
-		w.Header().Set("Content-Encoding", "gzip")
-		next.ServeHTTP(gzw, r)
-	})
-}
+// 		// Создаем обертку для ResponseWriter
+// 		gzw := gzipResponseWriter{
+// 			ResponseWriter: w,
+// 			gzipWriter:     gzip.NewWriter(w),
+// 		}
+// 		defer gzw.gzipWriter.Close()
 
-type gzipResponseWriter struct {
-	http.ResponseWriter
-	gzipWriter *gzip.Writer
-}
+// 		// Устанавливаем заголовки
+// 		w.Header().Set("Content-Encoding", "gzip")
+// 		next.ServeHTTP(gzw, r)
+// 	})
+// }
 
-func (w gzipResponseWriter) Write(b []byte) (int, error) {
-	// Сжимаем данные только для допустимых типов контента
-	contentType := w.Header().Get("Content-Type")
-	if strings.Contains(contentType, "application/json") ||
-		strings.Contains(contentType, "text/html") {
-		return w.gzipWriter.Write(b)
-	}
-	return w.ResponseWriter.Write(b)
-}
+// type gzipResponseWriter struct {
+// 	http.ResponseWriter
+// 	gzipWriter *gzip.Writer
+// }
+
+// func (w gzipResponseWriter) Write(b []byte) (int, error) {
+// 	// Сжимаем данные только для допустимых типов контента
+// 	contentType := w.Header().Get("Content-Type")
+// 	if strings.Contains(contentType, "application/json") ||
+// 		strings.Contains(contentType, "text/html") {
+// 		return w.gzipWriter.Write(b)
+// 	}
+// 	return w.ResponseWriter.Write(b)
+// }
