@@ -70,7 +70,7 @@ func isValidURL(rawURL string) bool {
 }
 
 func readFile() int {
-	var count int = 1
+	var count = 1
 	file, err := os.Open(Config.fileStorage)
 	if err != nil {
 		return count
