@@ -71,7 +71,7 @@ func isValidURL(rawURL string) bool {
 
 func readFile() int {
 	var count int = 1
-	file, err := os.Open("data.json")
+	file, err := os.Open(Config.fileStorage)
 	if err != nil {
 		return count
 	}
@@ -87,7 +87,7 @@ func readFile() int {
 func readCheckFile(id string) bool {
 	var check bool
 	check = false
-	file, err := os.Open("data.json")
+	file, err := os.Open(Config.fileStorage)
 	if err != nil {
 		return check
 	}
