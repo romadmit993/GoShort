@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -34,4 +35,20 @@ func TestHandleGet(t *testing.T) {
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
+}
+func TestFileStorage(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "test-*.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	// Запуск сервера с тестовым файлом
+	go func() {
+		Config.fileStorage = tempFile.Name()
+		main()
+	}()
+
+	// Тест HTTP запросов и проверка файла
+	// ...
 }

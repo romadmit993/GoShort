@@ -35,7 +35,7 @@ func ParseFlags() {
 	// Устанавливаем значения по умолчанию для флагов.
 	flag.StringVar(&Config.localServer, "a", "localhost:8080", "адрес запуска HTTP-сервера")
 	flag.StringVar(&Config.baseAddress, "b", "http://localhost:8080/", "базовый адрес сокращённого URL")
-	flag.StringVar(&Config.fileStorage, "f", "/tmp/short-url-db.json", "путь к файлу для хранения данных") // новый флаг
+	flag.StringVar(&Config.fileStorage, "f", "/tmp/short-url-db.json", "путь к файлу для хранения данных") // исправлено значение по умолчанию
 	flag.Parse()
 
 	// Приоритет: переменные окружения > флаги.

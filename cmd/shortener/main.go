@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -109,6 +110,17 @@ func readCheckFile(id string) bool {
 	return check
 }
 func saveShortURLFile(shortID string, url string) {
+	if Config.fileStorage == "" {
+		log.Printf("Путь к файлу не задан")
+		return
+	}
+
+	// Создаем директорию при необходимости
+	dir := filepath.Dir(Config.fileStorage)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Printf("Ошибка создания директории: %v", err)
+		return
+	}
 	uuid := readFile()
 	record := shortenerURLFile{
 		UUID:        strconv.Itoa(uuid),
@@ -121,7 +133,7 @@ func saveShortURLFile(shortID string, url string) {
 	}
 	jsonData = append(jsonData, '\n')
 	// Открываем файл для записи
-	file, err := os.OpenFile(Config.fileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(Config.fileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalf("Ошибка при создании файла: %v", err)
 	}
