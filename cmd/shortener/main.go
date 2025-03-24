@@ -121,7 +121,7 @@ func saveShortURLFile(shortID string, url string) {
 	}
 	jsonData = append(jsonData, '\n')
 	// Открываем файл для записи
-	file, err := os.OpenFile("data.json", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(Config.fileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Ошибка при создании файла: %v", err)
 	}
