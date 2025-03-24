@@ -84,7 +84,30 @@ func readFile() int {
 	}
 	return count
 }
+func readCheckFile(id string) bool {
+	var check bool
+	check = false
+	file, err := os.Open("data.json")
+	if err != nil {
+		return check
+	}
+	defer file.Close()
 
+	// Читаем файл построчно
+	scanner := bufio.NewScanner(file)
+	var record shortenerUrlFile
+	for scanner.Scan() {
+		line := scanner.Text()
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			continue
+		}
+		if id == record.Short_url {
+			check = true
+			break
+		}
+	}
+	return check
+}
 func saveShortUrlFile(shortID string, url string) {
 	uuid := readFile()
 	record := shortenerUrlFile{
@@ -177,6 +200,9 @@ func handleGet() http.HandlerFunc {
 		}
 		storeMux.RLock()
 		originalURL, exists := urlStore[id]
+		if !exists {
+			exists = readCheckFile(id)
+		}
 		storeMux.RUnlock()
 		if !exists {
 			http.Error(w, "Сокращённый URL не найден", http.StatusNotFound)
