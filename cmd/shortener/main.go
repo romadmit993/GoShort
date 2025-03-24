@@ -37,10 +37,10 @@ type (
 		http.ResponseWriter
 		Writer io.Writer
 	}
-	shortenerUrlFile struct {
-		Uuid         string `json:"uuid"`
-		Short_url    string `json:"short_url"`
-		Original_url string `json:"original_url"`
+	shortenerURLFile struct {
+		UUID        string `json:"uuid"`
+		ShortURL    string `json:"short_url"`
+		OriginalURL string `json:"original_url"`
 	}
 )
 
@@ -95,25 +95,25 @@ func readCheckFile(id string) bool {
 
 	// Читаем файл построчно
 	scanner := bufio.NewScanner(file)
-	var record shortenerUrlFile
+	var record shortenerURLFile
 	for scanner.Scan() {
 		line := scanner.Text()
 		if err := json.Unmarshal([]byte(line), &record); err != nil {
 			continue
 		}
-		if id == record.Short_url {
+		if id == record.ShortURL {
 			check = true
 			break
 		}
 	}
 	return check
 }
-func saveShortUrlFile(shortID string, url string) {
+func saveShortURLFile(shortID string, url string) {
 	uuid := readFile()
-	record := shortenerUrlFile{
-		Uuid:         strconv.Itoa(uuid),
-		Short_url:    shortID,
-		Original_url: url,
+	record := shortenerURLFile{
+		UUID:        strconv.Itoa(uuid),
+		ShortURL:    shortID,
+		OriginalURL: url,
 	}
 	jsonData, err := json.Marshal(record)
 	if err != nil {
@@ -150,7 +150,7 @@ func handlePost() http.HandlerFunc {
 		shortID := generateShortID()
 		storeMux.Lock()
 		urlStore[shortID] = originalURL
-		saveShortUrlFile(shortID, originalURL)
+		saveShortURLFile(shortID, originalURL)
 		storeMux.Unlock()
 
 		shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID)
@@ -176,7 +176,7 @@ func handleShortenPost() http.HandlerFunc {
 		shortID := generateShortID()
 		storeMux.Lock()
 		urlStore[shortID] = apiShorten.URL
-		saveShortUrlFile(shortID, apiShorten.URL)
+		saveShortURLFile(shortID, apiShorten.URL)
 		storeMux.Unlock()
 		shortURL := fmt.Sprintf("%s/%s", Config.baseAddress, shortID)
 		response := models.Shorten{
