@@ -14,6 +14,11 @@ import (
 	"sync"
 	"time"
 
+	"bufio"
+	"log"
+	"os"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
@@ -31,6 +36,11 @@ type (
 	gzipWriter struct {
 		http.ResponseWriter
 		Writer io.Writer
+	}
+	shortenerUrlFile struct {
+		Uuid         string `json:"uuid"`
+		Short_url    string `json:"short_url"`
+		Original_url string `json:"original_url"`
 	}
 )
 
@@ -59,6 +69,46 @@ func isValidURL(rawURL string) bool {
 	return err == nil
 }
 
+func readFile() int {
+	var count int = 1
+	file, err := os.Open("data.json")
+	if err != nil {
+		return count
+	}
+	defer file.Close()
+
+	// Читаем файл построчно
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		count += 1
+	}
+	return count
+}
+
+func saveShortUrlFile(shortID string, url string) {
+	uuid := readFile()
+	record := shortenerUrlFile{
+		Uuid:         strconv.Itoa(uuid),
+		Short_url:    shortID,
+		Original_url: url,
+	}
+	jsonData, err := json.Marshal(record)
+	if err != nil {
+		log.Fatalf("Ошибка при кодировании в JSON: %v", err)
+	}
+	jsonData = append(jsonData, '\n')
+	// Открываем файл для записи
+	file, err := os.OpenFile("data.json", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Ошибка при создании файла: %v", err)
+	}
+	defer file.Close()
+	_, err = file.Write(jsonData)
+	if err != nil {
+		log.Fatalf("Ошибка при записи в файл: %v", err)
+	}
+}
+
 func handlePost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -77,6 +127,7 @@ func handlePost() http.HandlerFunc {
 		shortID := generateShortID()
 		storeMux.Lock()
 		urlStore[shortID] = originalURL
+		saveShortUrlFile(shortID, originalURL)
 		storeMux.Unlock()
 
 		shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID)
@@ -102,6 +153,7 @@ func handleShortenPost() http.HandlerFunc {
 		shortID := generateShortID()
 		storeMux.Lock()
 		urlStore[shortID] = apiShorten.URL
+		saveShortUrlFile(shortID, apiShorten.URL)
 		storeMux.Unlock()
 		shortURL := fmt.Sprintf("%s/%s", Config.baseAddress, shortID)
 		response := models.Shorten{
@@ -206,7 +258,6 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 }
 func gzipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Сжимаем данные только для допустимых типов контента
 		contentType := w.Header().Get("Content-Type")
 		if strings.Contains(contentType, "application/json") ||
 			strings.Contains(contentType, "text/html") {
