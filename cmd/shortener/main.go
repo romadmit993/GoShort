@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"romadmit993/GoShort/internal/models"
 
+	//	"romadmit993/GoShort/internal/handlers"
+
 	"strings"
 	"sync"
 	"time"
@@ -22,7 +24,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"go.uber.org/zap"
+	//	"go.uber.org/zap"
 )
 
 type (
@@ -48,8 +50,8 @@ type (
 var (
 	urlStore = make(map[string]string)
 	storeMux sync.RWMutex
-	sugar    zap.SugaredLogger
-	r        = rand.New(rand.NewSource(time.Now().UnixNano()))
+	//	sugar    zap.SugaredLogger
+	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 const (
@@ -229,8 +231,8 @@ func handleGet() http.HandlerFunc {
 func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
-	r.Use(ungzipMiddleware) // Добавляем middleware для распаковки
-	r.Use(gzipHandle)       // Добавляем middleware для сжатия
+	r.Use(ungzipMiddleware)
+	r.Use(gzipHandle)
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
@@ -239,19 +241,21 @@ func testRouter() chi.Router {
 
 func main() {
 
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
+	// logger, err := zap.NewDevelopment()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	defer logger.Sync()
-	sugar = *logger.Sugar()
+	// defer logger.Sync()
+	// sugar = *logger.Sugar()
 
 	ParseFlags()
-	sugar.Infow("Сервер запущен", "address", Config.localServer)
+	log.Printf("Сервер запущен на адресе %s", Config.localServer)
+	//	sugar.Infow("Сервер запущен", "address", Config.localServer)
 
 	if err := http.ListenAndServe(Config.localServer, testRouter()); err != nil {
-		sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
+		// sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
+		log.Fatalf("Ошибка при запуске сервера: %v", err)
 	}
 }
 
@@ -269,12 +273,20 @@ func withLogging(h http.HandlerFunc) http.HandlerFunc {
 		}
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
-		sugar.Infoln(
-			"uri", r.RequestURI,
-			"method", r.Method,
-			"status", responseData.status,
-			"duration", duration,
-			"size", responseData.size,
+		// sugar.Infoln(
+		// 	"uri", r.RequestURI,
+		// 	"method", r.Method,
+		// 	"status", responseData.status,
+		// 	"duration", duration,
+		// 	"size", responseData.size,
+		// )
+		log.Printf(
+			"uri=%s method=%s status=%d duration=%s size=%d\n",
+			r.RequestURI,
+			r.Method,
+			responseData.status,
+			duration,
+			responseData.size,
 		)
 	}
 	return http.HandlerFunc(logFn)
