@@ -236,7 +236,7 @@ func handleGetPing() http.HandlerFunc {
 			http.Error(w, "Database not initialized", http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 		defer db.Close()
 	}
 	return http.HandlerFunc(fn)
