@@ -231,14 +231,12 @@ func handleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		ps := Config.database
-
-		db, err := sql.Open("pgx", ps)
+		db, err := sql.Open("pgx", Config.database)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
+			http.Error(w, "Database not initialized", http.StatusInternalServerError)
+			return
 		}
+		w.WriteHeader(http.StatusOK)
 		defer db.Close()
 	}
 	return http.HandlerFunc(fn)
