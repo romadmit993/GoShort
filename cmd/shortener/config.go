@@ -13,7 +13,8 @@ import (
 var Config struct {
 	localServer string
 	baseAddress string
-	fileStorage string // новое поле
+	fileStorage string
+	database    string
 }
 
 // EnviromentVariables представляет переменные окружения.
@@ -21,6 +22,7 @@ type EnviromentVariables struct {
 	ServerAddress string `env:"SERVER_ADDRESS"`
 	BaseURL       string `env:"BASE_URL"`
 	FileStorage   string `env:"FILE_STORAGE_PATH"`
+	DataBase      string `env:"DATABASE_DSN"`
 }
 
 var cfg EnviromentVariables
@@ -32,6 +34,7 @@ func ParseFlags() {
 	flag.StringVar(&Config.localServer, "a", "localhost:8080", "адрес запуска HTTP-сервера")
 	flag.StringVar(&Config.baseAddress, "b", "http://localhost:8080/", "базовый адрес сокращённого URL")
 	flag.StringVar(&Config.fileStorage, "f", "/tmp/short-url-db.json", "путь к файлу для хранения данных")
+	flag.StringVar(&Config.baseAddress, "d", "", "подключение к базе данных")
 	flag.Parse()
 
 	if cfg.ServerAddress != "" {
@@ -43,7 +46,9 @@ func ParseFlags() {
 	if cfg.FileStorage != "" {
 		Config.fileStorage = cfg.FileStorage
 	}
-
+	if cfg.DataBase != "" {
+		Config.database = cfg.DataBase
+	}
 	if !strings.HasSuffix(Config.baseAddress, "/") {
 		Config.baseAddress += "/"
 	}

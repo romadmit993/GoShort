@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"romadmit993/GoShort/internal/models"
 
-	//	"romadmit993/GoShort/internal/handlers"
-
 	"strings"
 	"sync"
 	"time"
@@ -22,8 +20,11 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"database/sql"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
@@ -228,6 +229,21 @@ func handleGet() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func handleGetPing() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ps := Config.database
+
+		db, err := sql.Open("pgx", ps)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+		defer db.Close()
+	}
+	return http.HandlerFunc(fn)
+}
+
 func testRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
@@ -236,6 +252,7 @@ func testRouter() chi.Router {
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
+	r.Get("/ping", withLogging(handleGetPing()))
 	return r
 }
 
