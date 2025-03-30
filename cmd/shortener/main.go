@@ -22,7 +22,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	_ "github.com/jackc/pgx/v5/stdlib"
+
+	//	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
