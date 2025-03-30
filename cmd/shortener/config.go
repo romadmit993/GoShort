@@ -34,7 +34,7 @@ func ParseFlags() {
 	flag.StringVar(&Config.localServer, "a", "localhost:8080", "адрес запуска HTTP-сервера")
 	flag.StringVar(&Config.baseAddress, "b", "http://localhost:8080/", "базовый адрес сокращённого URL")
 	flag.StringVar(&Config.fileStorage, "f", "/tmp/short-url-db.json", "путь к файлу для хранения данных")
-	flag.StringVar(&Config.baseAddress, "d", "", "подключение к базе данных")
+	flag.StringVar(&Config.database, "d", "", "подключение к базе данных")
 	flag.Parse()
 
 	if cfg.ServerAddress != "" {
