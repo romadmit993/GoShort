@@ -231,6 +231,7 @@ func handleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		sugar.Infow("test1", Config.database)
 		if Config.database == "" {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
