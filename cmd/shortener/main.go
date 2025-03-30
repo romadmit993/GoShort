@@ -231,25 +231,24 @@ func handleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		// Проверяем, что DSN настроен
 		if Config.database == "" {
-			http.Error(w, "Database connection not configured", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		db, err := sql.Open("pgx", Config.database)
 		if err != nil {
-			http.Error(w, "Database not initialized", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		if err := db.Ping(); err != nil {
-			http.Error(w, "Database ping failed", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		defer db.Close()
 
-		w.WriteHeader(http.StatusTemporaryRedirect)
-
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/plain")
 	}
 	return http.HandlerFunc(fn)
 }
