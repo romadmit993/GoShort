@@ -23,7 +23,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	//	_ "github.com/jackc/pgx/v5/stdlib"
+	"database/sql"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
@@ -228,30 +230,30 @@ func handleGet() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-// func handleGetPing() http.HandlerFunc {
-// 	fn := func(w http.ResponseWriter, r *http.Request) {
-// 		if Config.database == "" {
-// 			http.Error(w, "Database not configured", http.StatusInternalServerError)
-// 			return
-// 		}
+func handleGetPing() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		if Config.database == "" {
+			http.Error(w, "Database not configured", http.StatusInternalServerError)
+			return
+		}
 
-// 		db, err := sql.Open("pgx", Config.database)
-// 		if err != nil {
-// 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
-// 			return
-// 		}
-// 		defer db.Close()
+		db, err := sql.Open("pgx", Config.database)
+		if err != nil {
+			http.Error(w, "Database connection failed", http.StatusInternalServerError)
+			return
+		}
+		defer db.Close()
 
-// 		if err := db.Ping(); err != nil {
-// 			http.Error(w, "Database ping failed", http.StatusInternalServerError)
-// 			return
-// 		}
+		if err := db.Ping(); err != nil {
+			http.Error(w, "Database ping failed", http.StatusInternalServerError)
+			return
+		}
 
-// 		w.WriteHeader(http.StatusOK)
-// 		w.Write([]byte("OK"))
-// 	}
-// 	return http.HandlerFunc(fn)
-// }
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	}
+	return http.HandlerFunc(fn)
+}
 
 func testRouter() chi.Router {
 	r := chi.NewRouter()
@@ -261,7 +263,7 @@ func testRouter() chi.Router {
 	r.Post("/", withLogging(handlePost()))
 	r.Post("/api/shorten", withLogging(handleShortenPost()))
 	r.Get("/{id}", withLogging(handleGet()))
-	// r.Get("/ping", withLogging(handleGetPing()))
+	r.Get("/ping", withLogging(handleGetPing()))
 	return r
 }
 
