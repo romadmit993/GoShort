@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"romadmit993/GoShort/internal/config"
+	"romadmit993/GoShort/internal/handlers"
+	"romadmit993/GoShort/internal/storage"
 	"strings"
 	"testing"
 )
@@ -15,7 +17,7 @@ func TestHandlePost(t *testing.T) {
 	req.Header.Set("Content-Type", "text/plain")
 
 	w := httptest.NewRecorder()
-	handlePost()(w, req)
+	handlers.HandlePost()(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
@@ -28,11 +30,11 @@ func TestHandlePost(t *testing.T) {
 func TestHandleGet(t *testing.T) {
 	shortID := "testID"
 	originalURL := "https://example.com"
-	urlStore[shortID] = originalURL
+	storage.UrlStore[shortID] = originalURL
 
 	req := httptest.NewRequest(http.MethodGet, "/"+shortID, nil)
 	w := httptest.NewRecorder()
-	handleGet()(w, req)
+	handlers.HandleGet()(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
