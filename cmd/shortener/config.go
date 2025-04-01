@@ -9,7 +9,6 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-// Config хранит конфигурацию приложения.
 var Config struct {
 	localServer string
 	baseAddress string
@@ -17,7 +16,6 @@ var Config struct {
 	database    string
 }
 
-// EnviromentVariables представляет переменные окружения.
 type EnviromentVariables struct {
 	ServerAddress string `env:"SERVER_ADDRESS"`
 	BaseURL       string `env:"BASE_URL"`

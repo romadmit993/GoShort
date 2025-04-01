@@ -74,45 +74,32 @@ func isValidURL(rawURL string) bool {
 	return err == nil
 }
 
-func readFile() int {
-	var count = 1
+func readFileAndCheckID(id string) (int, bool) {
 	file, err := os.Open(Config.fileStorage)
 	if err != nil {
-		return count
+		return 1, false // Если файл не найден, считаем что записей нет
 	}
 	defer file.Close()
 
-	// Читаем файл построчно
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		count += 1
-	}
-	return count
-}
-func readCheckFile(id string) bool {
-	var check bool
-	check = false
-	file, err := os.Open(Config.fileStorage)
-	if err != nil {
-		return check
-	}
-	defer file.Close()
-
-	// Читаем файл построчно
 	scanner := bufio.NewScanner(file)
 	var record shortenerURLFile
+	count := 1
+	exists := false
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if err := json.Unmarshal([]byte(line), &record); err != nil {
-			continue
+			continue // Пропускаем битые записи, но продолжаем подсчет
 		}
-		if id == record.ShortURL {
-			check = true
-			break
+		if record.ShortURL == id {
+			exists = true
 		}
+		count++
 	}
-	return check
+
+	return count, exists
 }
+
 func saveShortURLFile(shortID string, url string) {
 	if Config.fileStorage == "" {
 		log.Printf("Путь к файлу не задан")
@@ -125,7 +112,7 @@ func saveShortURLFile(shortID string, url string) {
 		log.Printf("Ошибка создания директории: %v", err)
 		return
 	}
-	uuid := readFile()
+	uuid, _ := readFileAndCheckID("")
 	record := shortenerURLFile{
 		UUID:        strconv.Itoa(uuid),
 		ShortURL:    shortID,
@@ -133,18 +120,18 @@ func saveShortURLFile(shortID string, url string) {
 	}
 	jsonData, err := json.Marshal(record)
 	if err != nil {
-		log.Fatalf("Ошибка при кодировании в JSON: %v", err)
+		log.Printf("Ошибка при кодировании в JSON: %v", err)
 	}
 	jsonData = append(jsonData, '\n')
 	// Открываем файл для записи
 	file, err := os.OpenFile(Config.fileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		log.Fatalf("Ошибка при создании файла: %v", err)
+		log.Printf("Ошибка при создании файла: %v", err)
 	}
 	defer file.Close()
 	_, err = file.Write(jsonData)
 	if err != nil {
-		log.Fatalf("Ошибка при записи в файл: %v", err)
+		log.Printf("Ошибка при записи в файл: %v", err)
 	}
 }
 
@@ -217,7 +204,7 @@ func handleGet() http.HandlerFunc {
 		storeMux.RLock()
 		originalURL, exists := urlStore[id]
 		if !exists {
-			exists = readCheckFile(id)
+			_, exists = readFileAndCheckID(id)
 		}
 		storeMux.RUnlock()
 		if !exists {
@@ -317,13 +304,14 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode
+	r.ResponseWriter.WriteHeader(statusCode)
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
+
 func gzipHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contentType := w.Header().Get("Content-Type")
@@ -350,6 +338,11 @@ func gzipHandle(next http.Handler) http.Handler {
 func ungzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+			if r.Body == nil || r.ContentLength == 0 {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {
 				http.Error(w, "Failed to decompress request", http.StatusBadRequest)
