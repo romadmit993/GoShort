@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"romadmit993/GoShort/internal/config"
 	"romadmit993/GoShort/internal/models"
-
 	"strings"
 	"sync"
 	"time"
@@ -75,7 +75,7 @@ func isValidURL(rawURL string) bool {
 }
 
 func readFileAndCheckID(id string) (int, bool) {
-	file, err := os.Open(Config.fileStorage)
+	file, err := os.Open(config.Config.FileStorage)
 	if err != nil {
 		return 1, false // Если файл не найден, считаем что записей нет
 	}
@@ -101,13 +101,13 @@ func readFileAndCheckID(id string) (int, bool) {
 }
 
 func saveShortURLFile(shortID string, url string) {
-	if Config.fileStorage == "" {
+	if config.Config.FileStorage == "" {
 		log.Printf("Путь к файлу не задан")
 		return
 	}
 
 	// Создаем директорию при необходимости
-	dir := filepath.Dir(Config.fileStorage)
+	dir := filepath.Dir(config.Config.FileStorage)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Printf("Ошибка создания директории: %v", err)
 		return
@@ -124,7 +124,7 @@ func saveShortURLFile(shortID string, url string) {
 	}
 	jsonData = append(jsonData, '\n')
 	// Открываем файл для записи
-	file, err := os.OpenFile(Config.fileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(config.Config.FileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Printf("Ошибка при создании файла: %v", err)
 	}
@@ -156,7 +156,7 @@ func handlePost() http.HandlerFunc {
 		saveShortURLFile(shortID, originalURL)
 		storeMux.Unlock()
 
-		shortURL := fmt.Sprintf("%s%s", Config.baseAddress, shortID)
+		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, shortURL)
@@ -181,7 +181,7 @@ func handleShortenPost() http.HandlerFunc {
 		urlStore[shortID] = apiShorten.URL
 		saveShortURLFile(shortID, apiShorten.URL)
 		storeMux.Unlock()
-		shortURL := fmt.Sprintf("%s/%s", Config.baseAddress, shortID)
+		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
 		}
@@ -219,12 +219,12 @@ func handleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		if Config.database == "" {
+		if config.Config.Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
 		}
 
-		db, err := sql.Open("pgx", Config.database)
+		db, err := sql.Open("pgx", config.Config.Database)
 		if err != nil {
 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
 			return
@@ -264,10 +264,11 @@ func main() {
 	defer logger.Sync()
 	sugar = *logger.Sugar()
 
-	ParseFlags()
-	sugar.Infow("Сервер запущен", "address", Config.localServer)
+	config.ParseFlags()
+	//	sugar.Infow("Сервер запущен", "address", Config.localServer)
+	sugar.Infow("Сервер запущен", "address", config.Config.LocalServer)
 
-	if err := http.ListenAndServe(Config.localServer, testRouter()); err != nil {
+	if err := http.ListenAndServe(config.Config.LocalServer, testRouter()); err != nil {
 		sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
 	}
 }

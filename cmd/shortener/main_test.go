@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"romadmit993/GoShort/internal/config"
 	"strings"
 	"testing"
 )
@@ -45,7 +46,7 @@ func TestFileStorage(t *testing.T) {
 
 	// Запуск сервера с тестовым файлом
 	go func() {
-		Config.fileStorage = tempFile.Name()
+		config.Config.FileStorage = tempFile.Name()
 		main()
 	}()
 
