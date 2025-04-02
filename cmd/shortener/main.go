@@ -17,11 +17,9 @@ func main() {
 	}
 	defer logger.Sync()
 	storage.Sugar = *logger.Sugar()
-
-	conf := config.New()
-	//	config.ParseFlags()
-	storage.Sugar.Infow("Сервер запущен", "address", conf.LocalServer)
-	if err := http.ListenAndServe(conf.LocalServer, handlers.TestRouter()); err != nil {
+	config.ParseFlags()
+	storage.Sugar.Infow("Сервер запущен", "address", config.Config.LocalServer)
+	if err := http.ListenAndServe(config.Config.LocalServer, handlers.TestRouter()); err != nil {
 		storage.Sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
 	}
 }

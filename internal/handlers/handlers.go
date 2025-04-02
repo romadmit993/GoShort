@@ -18,7 +18,6 @@ import (
 
 func HandlePost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		conf := config.New()
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
@@ -38,7 +37,7 @@ func HandlePost() http.HandlerFunc {
 		storage.SaveShortURLFile(shortID, originalURL)
 		storage.StoreMux.Unlock()
 
-		shortURL := fmt.Sprintf("%s%s", conf.BaseAddress, shortID)
+		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, shortURL)
@@ -48,7 +47,6 @@ func HandlePost() http.HandlerFunc {
 
 func handleShortenPost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		conf := config.New()
 		var apiShorten models.Shorten
 		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
 			http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
@@ -64,7 +62,7 @@ func handleShortenPost() http.HandlerFunc {
 		storage.UrlStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
 		storage.StoreMux.Unlock()
-		shortURL := fmt.Sprintf("%s/%s", conf.BaseAddress, shortID)
+		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
 		}
@@ -102,13 +100,12 @@ func HandleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		conf := config.New()
-		if conf.Database == "" {
+		if config.Config.Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
 		}
 
-		db, err := sql.Open("pgx", conf.Database)
+		db, err := sql.Open("pgx", config.Config.Database)
 		if err != nil {
 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
 			return
