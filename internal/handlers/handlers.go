@@ -37,7 +37,7 @@ func HandlePost() http.HandlerFunc {
 		storage.SaveShortURLFile(shortID, originalURL)
 		storage.StoreMux.Unlock()
 
-		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
+		shortURL := fmt.Sprintf("%s%s", config.New().BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, shortURL)
@@ -62,7 +62,7 @@ func handleShortenPost() http.HandlerFunc {
 		storage.UrlStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
 		storage.StoreMux.Unlock()
-		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
+		shortURL := fmt.Sprintf("%s/%s", config.New().BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
 		}
@@ -100,12 +100,12 @@ func HandleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		if config.Config.Database == "" {
+		if config.New().Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
 		}
 
-		db, err := sql.Open("pgx", config.Config.Database)
+		db, err := sql.Open("pgx", config.New().Database)
 		if err != nil {
 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
 			return

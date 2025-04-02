@@ -42,12 +42,12 @@ func GenerateShortID() string {
 }
 
 func SaveShortURLFile(shortID string, url string) {
-	if config.Config.FileStorage == "" {
+	if config.New().FileStorage == "" {
 		log.Printf("Путь к файлу не задан")
 		return
 	}
 
-	dir := filepath.Dir(config.Config.FileStorage)
+	dir := filepath.Dir(config.New().FileStorage)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Printf("Ошибка создания директории: %v", err)
 		return
@@ -64,7 +64,7 @@ func SaveShortURLFile(shortID string, url string) {
 	}
 	jsonData = append(jsonData, '\n')
 
-	file, err := os.OpenFile(config.Config.FileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(config.New().FileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Printf("Ошибка при создании файла: %v", err)
 	}
@@ -76,7 +76,7 @@ func SaveShortURLFile(shortID string, url string) {
 }
 
 func ReadFileAndCheckID(id string) (int, bool) {
-	file, err := os.Open(config.Config.FileStorage)
+	file, err := os.Open(config.New().FileStorage)
 	if err != nil {
 		return 1, false // Если файл не найден, считаем что записей нет
 	}
