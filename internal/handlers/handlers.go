@@ -33,7 +33,7 @@ func HandlePost() http.HandlerFunc {
 
 		shortID := storage.GenerateShortID()
 		storage.StoreMux.Lock()
-		storage.UrlStore[shortID] = originalURL
+		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
 		storage.StoreMux.Unlock()
 
@@ -59,7 +59,7 @@ func handleShortenPost() http.HandlerFunc {
 		}
 		shortID := storage.GenerateShortID()
 		storage.StoreMux.Lock()
-		storage.UrlStore[shortID] = apiShorten.URL
+		storage.URLStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
 		storage.StoreMux.Unlock()
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
@@ -83,7 +83,7 @@ func HandleGet() http.HandlerFunc {
 			return
 		}
 		storage.StoreMux.RLock()
-		originalURL, exists := storage.UrlStore[id]
+		originalURL, exists := storage.URLStore[id]
 		if !exists {
 			_, exists = storage.ReadFileAndCheckID(id)
 		}

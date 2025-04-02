@@ -22,7 +22,7 @@ type shortenerURLFile struct {
 }
 
 var (
-	UrlStore = make(map[string]string)
+	URLStore = make(map[string]string)
 	StoreMux sync.RWMutex
 	Sugar    zap.SugaredLogger
 	R        = rand.New(rand.NewSource(time.Now().UnixNano()))
