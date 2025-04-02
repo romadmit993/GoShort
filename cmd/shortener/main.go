@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// main
 func main() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
