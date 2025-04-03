@@ -30,7 +30,7 @@ func TestHandlePost(t *testing.T) {
 func TestHandleGet(t *testing.T) {
 	shortID := "testID"
 	originalURL := "https://example.com"
-	storage.UrlStore[shortID] = originalURL
+	storage.URLStore[shortID] = originalURL
 
 	req := httptest.NewRequest(http.MethodGet, "/"+shortID, nil)
 	w := httptest.NewRecorder()
