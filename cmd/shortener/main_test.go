@@ -51,7 +51,7 @@ func TestFileStorage(t *testing.T) {
 	defer os.Remove(tempFile.Name())
 
 	// Запуск сервера с тестовым файлом
-	fileStorage := &Handler{}
+	fileStorage := Handler{}
 	go func() {
 		fileStorage.cfg.FileStorage = tempFile.Name()
 		main()

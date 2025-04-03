@@ -45,7 +45,7 @@ func GenerateShortID() string {
 }
 
 func SaveShortURLFile(shortID string, url string) {
-	fileStorage := &Handler{}
+	fileStorage := Handler{}
 	if fileStorage.cfg.FileStorage == "" {
 		log.Printf("Путь к файлу не задан")
 		return
@@ -80,7 +80,7 @@ func SaveShortURLFile(shortID string, url string) {
 }
 
 func ReadFileAndCheckID(id string) (int, bool) {
-	fileStorage := &Handler{}
+	fileStorage := Handler{}
 	file, err := os.Open(fileStorage.cfg.FileStorage)
 	if err != nil {
 		return 1, false // Если файл не найден, считаем что записей нет

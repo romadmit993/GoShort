@@ -22,7 +22,7 @@ type Handler struct {
 
 func HandlePost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		baseAddres := &Handler{}
+		baseAddres := Handler{}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
@@ -53,7 +53,7 @@ func HandlePost() http.HandlerFunc {
 func handleShortenPost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		var apiShorten models.Shorten
-		baseAddres := &Handler{}
+		baseAddres := Handler{}
 		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
 			http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
 			return
@@ -106,7 +106,7 @@ func HandleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		dataBase := &Handler{}
+		dataBase := Handler{}
 		if dataBase.cfg.Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
