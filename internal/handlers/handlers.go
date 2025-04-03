@@ -16,8 +16,13 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
+type Handler struct {
+	cfg *config.Config
+}
+
 func HandlePost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		baseAddres := &Handler{}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
@@ -37,7 +42,7 @@ func HandlePost() http.HandlerFunc {
 		storage.SaveShortURLFile(shortID, originalURL)
 		storage.StoreMux.Unlock()
 
-		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
+		shortURL := fmt.Sprintf("%s%s", baseAddres.cfg.BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, shortURL)
@@ -48,6 +53,7 @@ func HandlePost() http.HandlerFunc {
 func handleShortenPost() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		var apiShorten models.Shorten
+		baseAddres := &Handler{}
 		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
 			http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
 			return
@@ -62,7 +68,7 @@ func handleShortenPost() http.HandlerFunc {
 		storage.URLStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
 		storage.StoreMux.Unlock()
-		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
+		shortURL := fmt.Sprintf("%s/%s", baseAddres.cfg.BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
 		}
@@ -100,12 +106,13 @@ func HandleGet() http.HandlerFunc {
 
 func handleGetPing() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		if config.Config.Database == "" {
+		dataBase := &Handler{}
+		if dataBase.cfg.Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
 		}
 
-		db, err := sql.Open("pgx", config.Config.Database)
+		db, err := sql.Open("pgx", dataBase.cfg.Database)
 		if err != nil {
 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
 			return

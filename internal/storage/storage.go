@@ -20,6 +20,9 @@ type shortenerURLFile struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
+type Handler struct {
+	cfg *config.Config
+}
 
 var (
 	URLStore = make(map[string]string)
@@ -42,12 +45,13 @@ func GenerateShortID() string {
 }
 
 func SaveShortURLFile(shortID string, url string) {
-	if config.Config.FileStorage == "" {
+	fileStorage := &Handler{}
+	if fileStorage.cfg.FileStorage == "" {
 		log.Printf("Путь к файлу не задан")
 		return
 	}
 
-	dir := filepath.Dir(config.Config.FileStorage)
+	dir := filepath.Dir(fileStorage.cfg.FileStorage)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Printf("Ошибка создания директории: %v", err)
 		return
@@ -64,7 +68,7 @@ func SaveShortURLFile(shortID string, url string) {
 	}
 	jsonData = append(jsonData, '\n')
 
-	file, err := os.OpenFile(config.Config.FileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(fileStorage.cfg.FileStorage, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Printf("Ошибка при создании файла: %v", err)
 	}
@@ -76,7 +80,8 @@ func SaveShortURLFile(shortID string, url string) {
 }
 
 func ReadFileAndCheckID(id string) (int, bool) {
-	file, err := os.Open(config.Config.FileStorage)
+	fileStorage := &Handler{}
+	file, err := os.Open(fileStorage.cfg.FileStorage)
 	if err != nil {
 		return 1, false // Если файл не найден, считаем что записей нет
 	}

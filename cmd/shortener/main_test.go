@@ -11,6 +11,10 @@ import (
 	"testing"
 )
 
+type Handler struct {
+	cfg *config.Config
+}
+
 func TestHandlePost(t *testing.T) {
 	originalURL := "https://example.com"
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(originalURL))
@@ -47,8 +51,9 @@ func TestFileStorage(t *testing.T) {
 	defer os.Remove(tempFile.Name())
 
 	// Запуск сервера с тестовым файлом
+	fileStorage := &Handler{}
 	go func() {
-		config.Config.FileStorage = tempFile.Name()
+		fileStorage.cfg.FileStorage = tempFile.Name()
 		main()
 	}()
 
