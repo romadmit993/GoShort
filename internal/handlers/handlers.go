@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"database/sql"
+	//	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"romadmit993/GoShort/internal/config"
+	"romadmit993/GoShort/internal/database"
 	customMiddleware "romadmit993/GoShort/internal/middleware"
 	"romadmit993/GoShort/internal/models"
 	"romadmit993/GoShort/internal/storage"
@@ -105,16 +106,9 @@ func handleGetPing() http.HandlerFunc {
 			return
 		}
 
-		db, err := sql.Open("pgx", config.Config.Database)
-		if err != nil {
+		check := database.CheckConnectingDataBase()
+		if !check {
 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
-			return
-		}
-		defer db.Close()
-
-		if err := db.Ping(); err != nil {
-			http.Error(w, "Database ping failed", http.StatusInternalServerError)
-			return
 		}
 
 		w.WriteHeader(http.StatusOK)
