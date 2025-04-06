@@ -28,7 +28,8 @@ func CheckConnectingDataBase() bool {
 
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS shorturl (
-            shorturl TEXT PRIMARY KEYL,
+			id SERIAL PRIMARY KEY,
+            shorturl TEXT UNIQUE NOT NULL,
             originalurl TEXT UNIQUE NOT NULL
         )`
 
