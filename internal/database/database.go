@@ -21,10 +21,10 @@ func CheckConnectingDataBase() bool {
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		log.Printf("Ping error: %v", err)
-		return false
-	}
+	// if err := db.Ping(); err != nil {
+	// 	log.Printf("Ping error: %v", err)
+	// 	return false
+	// }
 
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS shorturl (

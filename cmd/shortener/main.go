@@ -19,13 +19,7 @@ func main() {
 	if err != nil {
 		log.Printf("Connection error: %v", err)
 	}
-	// Добавьте эту проверку!
-	if config.Config.Database != "" {
-		if !database.CheckConnectingDataBase() {
-			log.Printf("Connection error: %v", err)
-		}
-	}
-	//defer db.Close()
+	defer db.Close()
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -34,6 +28,11 @@ func main() {
 	defer logger.Sync()
 	storage.Sugar = *logger.Sugar()
 	config.ParseFlags()
+	if config.Config.Database != "" {
+		if !database.CheckConnectingDataBase() {
+			log.Printf("Connection error: %v", err)
+		}
+	}
 	storage.Sugar.Infow("Сервер запущен", "address", config.Config.LocalServer)
 	if err := http.ListenAndServe(config.Config.LocalServer, handlers.TestRouter(db)); err != nil {
 		storage.Sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
