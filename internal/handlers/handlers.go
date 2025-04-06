@@ -84,6 +84,73 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func handleBatchPost(db *sql.DB) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		var batch []models.BatchRequest
+		if err := json.NewDecoder(r.Body).Decode(&batch); err != nil {
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+		results := make([]models.BatchResponse, 0, len(batch))
+		storage.StoreMux.Lock()
+		defer storage.StoreMux.Unlock()
+
+		var tx *sql.Tx
+		var err error
+		if config.Config.Database != "" {
+			tx, err = db.Begin()
+			if err != nil {
+				http.Error(w, "Database error", http.StatusInternalServerError)
+				return
+			}
+			defer tx.Rollback()
+		}
+
+		for _, item := range batch {
+			if !isValidURL(item.OriginalURL) {
+				http.Error(w, "Invalid URL: "+item.OriginalURL, http.StatusBadRequest)
+				return
+			}
+
+			shortID := storage.GenerateShortID()
+
+			storage.URLStore[shortID] = item.OriginalURL
+			storage.SaveShortURLFile(shortID, item.OriginalURL)
+
+			if config.Config.Database != "" {
+				_, err = tx.ExecContext(
+					r.Context(),
+					"INSERT INTO shorturl (shorturl, originalurl) VALUES ($1, $2)",
+					shortID,
+					item.OriginalURL,
+				)
+				if err != nil {
+					http.Error(w, "Database insert error", http.StatusInternalServerError)
+					return
+				}
+			}
+
+			results = append(results, models.BatchResponse{
+				CorrelationID: item.CorrelationID,
+				ShortURL:      fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID),
+			})
+		}
+
+		if config.Config.Database != "" {
+			if err := tx.Commit(); err != nil {
+				http.Error(w, "Database commit error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(results)
+	}
+	return http.HandlerFunc(fn)
+}
+
 func HandleGet(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
@@ -146,6 +213,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Use(customMiddleware.GzipHandle)
 	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
 	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost(db)))
+	r.Post("/api/shorten/batch", customMiddleware.WithLogging(handleBatchPost(db)))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing(db)))
 	return r
