@@ -50,7 +50,7 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func handleShortenPost() http.HandlerFunc {
+func handleShortenPost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		var apiShorten models.Shorten
 		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
@@ -66,6 +66,9 @@ func handleShortenPost() http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
+		if config.Config.Database != "" {
+			database.SaveDataBase(db, shortID, apiShorten.URL)
+		}
 		storage.StoreMux.Unlock()
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
@@ -127,7 +130,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Use(customMiddleware.UngzipMiddleware)
 	r.Use(customMiddleware.GzipHandle)
 	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
-	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost()))
+	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost(db)))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet()))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing()))
 	return r
