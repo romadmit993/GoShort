@@ -62,12 +62,15 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) {
         VALUES ($1, $2)
     `
 
-	db.QueryRowContext(ctx, query, shortURL, originalURL)
+	_, err := db.ExecContext(ctx, query, shortURL, originalURL)
+	if err != nil {
+		log.Printf("Insert error: %v", err)
+	}
 }
 
 func СheckRecord(db *sql.DB, shortURLL string) bool {
 	row := db.QueryRowContext(context.Background(),
-		"SELECT shortURL FROM shorturl WHERE shortURL = $1, shortURLL")
+		"SELECT shorturl FROM shorturl WHERE shorturl = $1", shortURLL)
 
 	var (
 		shortURL string
