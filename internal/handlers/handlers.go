@@ -128,10 +128,10 @@ func handleGetPing() http.HandlerFunc {
 			return
 		}
 
-		check := database.CheckConnectingDataBase()
-		if !check {
-			http.Error(w, "Database connection failed", http.StatusInternalServerError)
-		}
+		//check := database.CheckConnectingDataBase()
+		//if !check {
+		//	http.Error(w, "Database connection failed", http.StatusInternalServerError)
+		//}
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
