@@ -93,9 +93,9 @@ func HandleGet(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.RLock()
 		var existsDataBase bool
 		existsDataBase = false
-		if config.Config.Database != "" {
-			existsDataBase = database.СheckRecord(db, id)
-		}
+		//if config.Config.Database != "" {
+		existsDataBase = database.СheckRecord(db, id)
+		//}
 		originalURL, exists := storage.URLStore[id]
 		if !exists {
 			_, exists = storage.ReadFileAndCheckID(id)
