@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"romadmit993/GoShort/internal/config"
 	"time"
 )
 
@@ -13,16 +12,14 @@ type ShortURL struct {
 	OriginalURL string
 }
 
-func CheckConnectingDataBase() bool {
-	db, err := sql.Open("pgx", config.Config.Database)
-	if err != nil {
-		log.Printf("Connection error: %v", err)
+func CheckConnectingDataBase(db *sql.DB) bool {
+	if err := db.Ping(); err != nil {
+		log.Printf("Ping error: %v", err)
 		return false
 	}
-	defer db.Close()
-
 	return true
 }
+
 func SaveDataBase(db *sql.DB, shortURL, originalURL string) error {
 	query := `
         INSERT INTO shorturl (shorturl, originalurl)

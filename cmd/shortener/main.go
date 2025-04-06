@@ -25,7 +25,8 @@ func main() {
 			log.Fatal("Connection error:", err)
 		}
 		defer db.Close()
-		if initializeDatabase(db) {
+
+		if !initializeDatabase(db) {
 			log.Fatal("Database initialization failed")
 		}
 	}

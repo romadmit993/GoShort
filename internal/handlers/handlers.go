@@ -121,17 +121,17 @@ func HandleGet(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func handleGetPing() http.HandlerFunc {
+func handleGetPing(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if config.Config.Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
 		}
 
-		//check := database.CheckConnectingDataBase()
-		//if !check {
-		//	http.Error(w, "Database connection failed", http.StatusInternalServerError)
-		//}
+		check := database.CheckConnectingDataBase(db)
+		if !check {
+			http.Error(w, "Database connection failed", http.StatusInternalServerError)
+		}
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -147,7 +147,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
 	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost(db)))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
-	r.Get("/ping", customMiddleware.WithLogging(handleGetPing()))
+	r.Get("/ping", customMiddleware.WithLogging(handleGetPing(db)))
 	return r
 }
 
