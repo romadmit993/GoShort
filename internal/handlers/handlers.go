@@ -83,7 +83,7 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func HandleGet() http.HandlerFunc {
+func HandleGet(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if id == "" {
@@ -91,11 +91,19 @@ func HandleGet() http.HandlerFunc {
 			return
 		}
 		storage.StoreMux.RLock()
+		var existsDataBase bool
+		existsDataBase = false
+		if config.Config.Database != "" {
+			existsDataBase = database.СheckRecord(db, id)
+		}
 		originalURL, exists := storage.URLStore[id]
 		if !exists {
 			_, exists = storage.ReadFileAndCheckID(id)
 		}
 		storage.StoreMux.RUnlock()
+		if !exists {
+			exists = existsDataBase
+		}
 		if !exists {
 			http.Error(w, "Сокращённый URL не найден", http.StatusNotFound)
 			return
@@ -131,7 +139,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Use(customMiddleware.GzipHandle)
 	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
 	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost(db)))
-	r.Get("/{id}", customMiddleware.WithLogging(HandleGet()))
+	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing()))
 	return r
 }

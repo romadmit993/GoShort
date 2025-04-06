@@ -64,3 +64,22 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) {
 
 	db.QueryRowContext(ctx, query, shortURL, originalURL)
 }
+
+func СheckRecord(db *sql.DB, originalURL string) bool {
+	row := db.QueryRowContext(context.Background(),
+		"SELECT * FROM shorturl WHERE originalURL = $1, originalURL")
+
+	var (
+		record string
+	)
+	err := row.Scan(&record)
+	if err != nil {
+		log.Printf("Ошибка в выборке: %v", err)
+		return false
+	}
+	if record == "" {
+		log.Printf("Нет значений")
+		return false
+	}
+	return true
+}

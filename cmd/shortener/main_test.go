@@ -36,7 +36,8 @@ func TestHandleGet(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/"+shortID, nil)
 	w := httptest.NewRecorder()
-	handlers.HandleGet()(w, req)
+	db, _ := sql.Open("pgx", config.Config.Database)
+	handlers.HandleGet(db)(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
