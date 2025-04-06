@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"romadmit993/GoShort/internal/config"
@@ -93,6 +94,7 @@ func HandleGet(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.RLock()
 		var existsDataBase bool
 		existsDataBase = false
+		log.Printf("Подключение к базе данных: %v", config.Config.Database)
 		if config.Config.Database != "" {
 			existsDataBase = database.СheckRecord(db, id)
 		}
