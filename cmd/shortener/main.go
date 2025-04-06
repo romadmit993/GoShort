@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"romadmit993/GoShort/internal/config"
+	"romadmit993/GoShort/internal/database"
 	"romadmit993/GoShort/internal/handlers"
 	"romadmit993/GoShort/internal/storage"
 
@@ -18,7 +19,13 @@ func main() {
 	if err != nil {
 		log.Printf("Connection error: %v", err)
 	}
-	defer db.Close()
+	// Добавьте эту проверку!
+	if config.Config.Database != "" {
+		if !database.CheckConnectingDataBase() {
+			log.Printf("Connection error: %v", err)
+		}
+	}
+	//defer db.Close()
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {

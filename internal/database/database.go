@@ -47,36 +47,28 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) error {
 	query := `
         INSERT INTO shorturl (shorturl, originalurl)
         VALUES ($1, $2)
-        ON CONFLICT (originalurl) DO NOTHING
+        ON CONFLICT (originalurl) DO UPDATE 
+        SET shorturl = EXCLUDED.shorturl
+        RETURNING shorturl
     `
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := db.ExecContext(ctx, query, shortURL, originalURL)
+	var result string
+	err := db.QueryRowContext(ctx, query, shortURL, originalURL).Scan(&result)
 	if err != nil {
 		log.Printf("Insert error: %v", err)
 		return err
 	}
+
+	if result != shortURL {
+		//return fmt.Errorf("short URL mismatch")
+	}
+
 	return nil
 }
 
-// func СheckRecord(db *sql.DB, originalURL string) bool {
-// 	row := db.QueryRowContext(
-// 		context.Background(),
-// 		"SELECT originalurl FROM shorturl WHERE originalurl = $1",
-// 		originalURL,
-// 	)
-
-//		var result string
-//		if err := row.Scan(&result); err != nil {
-//			if err != sql.ErrNoRows {
-//				log.Printf("Check record error: %v", err)
-//			}
-//			return false
-//		}
-//		return true
-//	}
 func CheckOriginalURLExists(db *sql.DB, originalURL string) bool {
 	row := db.QueryRowContext(
 		context.Background(),
