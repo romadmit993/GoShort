@@ -65,19 +65,19 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) {
 	db.QueryRowContext(ctx, query, shortURL, originalURL)
 }
 
-func СheckRecord(db *sql.DB, shortURL string) bool {
+func СheckRecord(db *sql.DB, shortURLL string) bool {
 	row := db.QueryRowContext(context.Background(),
-		"SELECT * FROM shorturl WHERE shortURL = $1, shortURL")
+		"SELECT shortURL FROM shorturl WHERE shortURL = $1, shortURLL")
 
 	var (
-		record string
+		shortURL string
 	)
-	err := row.Scan(&record)
+	err := row.Scan(&shortURL)
 	if err != nil {
 		log.Printf("Ошибка в выборке: %v", err)
 		return false
 	}
-	if record == "" {
+	if shortURL == "" {
 		log.Printf("Нет значений")
 		return false
 	}
