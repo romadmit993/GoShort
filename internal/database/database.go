@@ -28,7 +28,7 @@ func CheckConnectingDataBase() bool {
 
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS shorturl (
-			id SERIAL PRIMARY KEY,
+			uuid SERIAL PRIMARY KEY,
             shorturl TEXT UNIQUE NOT NULL,
             originalurl TEXT UNIQUE NOT NULL
         )`
@@ -46,7 +46,8 @@ func CheckConnectingDataBase() bool {
 func SaveDataBase(db *sql.DB, shortURL, originalURL string) {
 	createTableSQL := `
         CREATE TABLE IF NOT EXISTS shorturl (
-            shorturl TEXT PRIMARY KEY,
+			uuid SERIAL PRIMARY KEY,
+            shorturl TEXT UNIQUE NOT NULL,
             originalurl TEXT UNIQUE NOT NULL
         )`
 
@@ -59,7 +60,6 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) {
 	query := `
         INSERT INTO shorturl (shorturl, originalurl)
         VALUES ($1, $2)
-        RETURNING shorturl, originalurl
     `
 
 	db.QueryRowContext(ctx, query, shortURL, originalURL)
