@@ -86,7 +86,8 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 
 func handleBatchPost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
 	}
 	return http.HandlerFunc(fn)
 }
