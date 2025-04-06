@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	//"io"
 	"net/http"
 	"romadmit993/GoShort/internal/storage"
 	"strings"
@@ -18,10 +17,6 @@ type (
 		http.ResponseWriter
 		responseData *responseData
 	}
-	// gzipWriter struct {
-	// 	http.ResponseWriter
-	// 	Writer io.Writer
-	// }
 	gzipResponseWriter struct {
 		http.ResponseWriter
 		gz *gzip.Writer

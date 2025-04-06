@@ -1,22 +1,25 @@
 package handlers
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"romadmit993/GoShort/internal/config"
+	"romadmit993/GoShort/internal/database"
 	customMiddleware "romadmit993/GoShort/internal/middleware"
 	"romadmit993/GoShort/internal/models"
 	"romadmit993/GoShort/internal/storage"
+
+	"database/sql"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
-func HandlePost() http.HandlerFunc {
+func HandlePost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -35,6 +38,9 @@ func HandlePost() http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
+		if config.Config.Database != "" {
+			database.SaveDataBase(db, shortID, originalURL)
+		}
 		storage.StoreMux.Unlock()
 
 		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
@@ -45,7 +51,7 @@ func HandlePost() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func handleShortenPost() http.HandlerFunc {
+func handleShortenPost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		var apiShorten models.Shorten
 		if err := json.NewDecoder(r.Body).Decode(&apiShorten); err != nil {
@@ -61,6 +67,9 @@ func handleShortenPost() http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
+		if config.Config.Database != "" {
+			database.SaveDataBase(db, shortID, apiShorten.URL)
+		}
 		storage.StoreMux.Unlock()
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
@@ -75,7 +84,7 @@ func handleShortenPost() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func HandleGet() http.HandlerFunc {
+func HandleGet(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		if id == "" {
@@ -83,11 +92,25 @@ func HandleGet() http.HandlerFunc {
 			return
 		}
 		storage.StoreMux.RLock()
+		var existsDataBase bool
 		originalURL, exists := storage.URLStore[id]
 		if !exists {
 			_, exists = storage.ReadFileAndCheckID(id)
 		}
 		storage.StoreMux.RUnlock()
+		if !exists {
+			exists = existsDataBase
+		}
+		// 3. Проверяем в БД
+		if !exists && config.Config.Database != "" {
+			err := db.QueryRowContext(
+				context.Background(),
+				"SELECT originalurl FROM shorturl WHERE shorturl = $1",
+				id,
+			).Scan(&originalURL)
+
+			exists = (err == nil)
+		}
 		if !exists {
 			http.Error(w, "Сокращённый URL не найден", http.StatusNotFound)
 			return
@@ -98,23 +121,16 @@ func HandleGet() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func handleGetPing() http.HandlerFunc {
+func handleGetPing(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if config.Config.Database == "" {
 			http.Error(w, "Database not configured", http.StatusInternalServerError)
 			return
 		}
 
-		db, err := sql.Open("pgx", config.Config.Database)
-		if err != nil {
+		check := database.CheckConnectingDataBase(db)
+		if !check {
 			http.Error(w, "Database connection failed", http.StatusInternalServerError)
-			return
-		}
-		defer db.Close()
-
-		if err := db.Ping(); err != nil {
-			http.Error(w, "Database ping failed", http.StatusInternalServerError)
-			return
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -123,15 +139,15 @@ func handleGetPing() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func TestRouter() chi.Router {
+func TestRouter(db *sql.DB) chi.Router {
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.CleanPath)
 	r.Use(customMiddleware.UngzipMiddleware)
 	r.Use(customMiddleware.GzipHandle)
-	r.Post("/", customMiddleware.WithLogging(HandlePost()))
-	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost()))
-	r.Get("/{id}", customMiddleware.WithLogging(HandleGet()))
-	r.Get("/ping", customMiddleware.WithLogging(handleGetPing()))
+	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
+	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost(db)))
+	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
+	r.Get("/ping", customMiddleware.WithLogging(handleGetPing(db)))
 	return r
 }
 
