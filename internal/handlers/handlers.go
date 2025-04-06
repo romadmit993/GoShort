@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	//	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,11 +12,13 @@ import (
 	"romadmit993/GoShort/internal/models"
 	"romadmit993/GoShort/internal/storage"
 
+	"database/sql"
+
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
-func HandlePost() http.HandlerFunc {
+func HandlePost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -36,6 +37,9 @@ func HandlePost() http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
+		if config.Config.Database != "" {
+			database.SaveDataBase(db, shortID, originalURL)
+		}
 		storage.StoreMux.Unlock()
 
 		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
@@ -117,12 +121,12 @@ func handleGetPing() http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
-func TestRouter() chi.Router {
+func TestRouter(db *sql.DB) chi.Router {
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.CleanPath)
 	r.Use(customMiddleware.UngzipMiddleware)
 	r.Use(customMiddleware.GzipHandle)
-	r.Post("/", customMiddleware.WithLogging(HandlePost()))
+	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
 	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost()))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet()))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing()))

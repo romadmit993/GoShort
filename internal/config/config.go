@@ -3,8 +3,6 @@ package config
 import (
 	"flag"
 	"log"
-
-	//"os"
 	"strings"
 
 	"github.com/caarlos0/env/v6"
