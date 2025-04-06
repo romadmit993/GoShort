@@ -65,9 +65,9 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) {
 	db.QueryRowContext(ctx, query, shortURL, originalURL)
 }
 
-func СheckRecord(db *sql.DB, originalURL string) bool {
+func СheckRecord(db *sql.DB, shortURL string) bool {
 	row := db.QueryRowContext(context.Background(),
-		"SELECT * FROM shorturl WHERE originalURL = $1, originalURL")
+		"SELECT * FROM shorturl WHERE shortURL = $1, shortURL")
 
 	var (
 		record string
