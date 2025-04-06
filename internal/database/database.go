@@ -21,26 +21,6 @@ func CheckConnectingDataBase() bool {
 	}
 	defer db.Close()
 
-	// if err := db.Ping(); err != nil {
-	// 	log.Printf("Ping error: %v", err)
-	// 	return false
-	// }
-
-	createTableSQL := `
-        CREATE TABLE IF NOT EXISTS shorturl (
-			uuid SERIAL PRIMARY KEY,
-            shorturl TEXT UNIQUE NOT NULL,
-            originalurl TEXT UNIQUE NOT NULL
-        )`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if _, err := db.ExecContext(ctx, createTableSQL); err != nil {
-		log.Printf("Table creation error: %v", err)
-		return false
-	}
-
 	return true
 }
 func SaveDataBase(db *sql.DB, shortURL, originalURL string) error {
