@@ -94,7 +94,8 @@ func HandleGet(db *sql.DB) http.HandlerFunc {
 		var existsDataBase bool
 		existsDataBase = false
 		if config.Config.Database != "" {
-			existsDataBase = database.CheckOriginalURLExists(db, storage.URLStore[id])
+			existsDataBase = true
+			//existsDataBase = database.CheckOriginalURLExists(db, storage.URLStore[id])
 		}
 		originalURL, exists := storage.URLStore[id]
 		if !exists {

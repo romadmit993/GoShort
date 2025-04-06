@@ -61,22 +61,22 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) error {
 	return nil
 }
 
-func СheckRecord(db *sql.DB, originalURL string) bool {
-	row := db.QueryRowContext(
-		context.Background(),
-		"SELECT originalurl FROM shorturl WHERE originalurl = $1",
-		originalURL,
-	)
+// func СheckRecord(db *sql.DB, originalURL string) bool {
+// 	row := db.QueryRowContext(
+// 		context.Background(),
+// 		"SELECT originalurl FROM shorturl WHERE originalurl = $1",
+// 		originalURL,
+// 	)
 
-	var result string
-	if err := row.Scan(&result); err != nil {
-		if err != sql.ErrNoRows {
-			log.Printf("Check record error: %v", err)
-		}
-		return false
-	}
-	return true
-}
+//		var result string
+//		if err := row.Scan(&result); err != nil {
+//			if err != sql.ErrNoRows {
+//				log.Printf("Check record error: %v", err)
+//			}
+//			return false
+//		}
+//		return true
+//	}
 func CheckOriginalURLExists(db *sql.DB, originalURL string) bool {
 	row := db.QueryRowContext(
 		context.Background(),
