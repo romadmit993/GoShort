@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,7 +18,8 @@ func TestHandlePost(t *testing.T) {
 	req.Header.Set("Content-Type", "text/plain")
 
 	w := httptest.NewRecorder()
-	handlers.HandlePost()(w, req)
+	db, _ := sql.Open("pgx", config.Config.Database)
+	handlers.HandlePost(db)(w, req)
 
 	resp := w.Result()
 	defer resp.Body.Close() // Закрываем тело ответа
