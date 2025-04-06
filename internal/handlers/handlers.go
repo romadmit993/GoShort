@@ -84,6 +84,13 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func handleBatchPost(db *sql.DB) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+
+	}
+	return http.HandlerFunc(fn)
+}
+
 func HandleGet(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
@@ -146,6 +153,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Use(customMiddleware.GzipHandle)
 	r.Post("/", customMiddleware.WithLogging(HandlePost(db)))
 	r.Post("/api/shorten", customMiddleware.WithLogging(handleShortenPost(db)))
+	r.Post("/api/shorten", customMiddleware.WithLogging(handleBatchPost(db)))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing(db)))
 	return r
