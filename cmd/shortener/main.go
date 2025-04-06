@@ -6,7 +6,6 @@ import (
 	"romadmit993/GoShort/internal/config"
 	"romadmit993/GoShort/internal/handlers"
 	"romadmit993/GoShort/internal/storage"
-	"time"
 
 	"database/sql"
 	"log"
@@ -50,10 +49,7 @@ func initializeDatabase(db *sql.DB) bool {
             originalurl TEXT UNIQUE NOT NULL
         )`
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := db.ExecContext(ctx, createTableSQL)
+	_, err := db.ExecContext(context.Background(), createTableSQL)
 	if err != nil {
 		log.Printf("Table creation error: %v", err)
 		return false
