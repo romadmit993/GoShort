@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -92,11 +93,6 @@ func HandleGet(db *sql.DB) http.HandlerFunc {
 		}
 		storage.StoreMux.RLock()
 		var existsDataBase bool
-		existsDataBase = false
-		if config.Config.Database != "" {
-			existsDataBase = true
-			//existsDataBase = database.CheckOriginalURLExists(db, storage.URLStore[id])
-		}
 		originalURL, exists := storage.URLStore[id]
 		if !exists {
 			_, exists = storage.ReadFileAndCheckID(id)
@@ -104,6 +100,16 @@ func HandleGet(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.RUnlock()
 		if !exists {
 			exists = existsDataBase
+		}
+		// 3. Проверяем в БД
+		if !exists && config.Config.Database != "" {
+			err := db.QueryRowContext(
+				context.Background(),
+				"SELECT originalurl FROM shorturl WHERE shorturl = $1",
+				id,
+			).Scan(&originalURL)
+
+			exists = (err == nil)
 		}
 		if !exists {
 			http.Error(w, "Сокращённый URL не найден", http.StatusNotFound)

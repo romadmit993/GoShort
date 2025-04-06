@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"romadmit993/GoShort/internal/config"
-	"romadmit993/GoShort/internal/database"
 	"romadmit993/GoShort/internal/handlers"
 	"romadmit993/GoShort/internal/storage"
+	"time"
 
 	"database/sql"
 	"log"
@@ -15,11 +16,19 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("pgx", config.Config.Database)
-	if err != nil {
-		log.Printf("Connection error: %v", err)
+	config.ParseFlags()
+	var db *sql.DB
+	var err error
+	if config.Config.Database != "" {
+		db, err = sql.Open("pgx", config.Config.Database)
+		if err != nil {
+			log.Fatal("Connection error:", err)
+		}
+		defer db.Close()
+		if initializeDatabase(db) {
+			log.Fatal("Database initialization failed")
+		}
 	}
-	defer db.Close()
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -27,14 +36,26 @@ func main() {
 	}
 	defer logger.Sync()
 	storage.Sugar = *logger.Sugar()
-	config.ParseFlags()
-	if config.Config.Database != "" {
-		if !database.CheckConnectingDataBase() {
-			log.Printf("Connection error: %v", err)
-		}
-	}
 	storage.Sugar.Infow("Сервер запущен", "address", config.Config.LocalServer)
 	if err := http.ListenAndServe(config.Config.LocalServer, handlers.TestRouter(db)); err != nil {
 		storage.Sugar.Fatalf(err.Error(), "Ошибка при запуске сервера")
 	}
+}
+func initializeDatabase(db *sql.DB) bool {
+	createTableSQL := `
+        CREATE TABLE IF NOT EXISTS shorturl (
+            uuid SERIAL PRIMARY KEY,
+            shorturl TEXT UNIQUE NOT NULL,
+            originalurl TEXT UNIQUE NOT NULL
+        )`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := db.ExecContext(ctx, createTableSQL)
+	if err != nil {
+		log.Printf("Table creation error: %v", err)
+		return false
+	}
+	return true
 }

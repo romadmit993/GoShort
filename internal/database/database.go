@@ -58,14 +58,13 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) error {
 	var result string
 	err := db.QueryRowContext(ctx, query, shortURL, originalURL).Scan(&result)
 	if err != nil {
+		// Обрабатываем случай, когда запись уже существует
+		if err == sql.ErrNoRows {
+			return nil
+		}
 		log.Printf("Insert error: %v", err)
 		return err
 	}
-
-	if result != shortURL {
-		//return fmt.Errorf("short URL mismatch")
-	}
-
 	return nil
 }
 
