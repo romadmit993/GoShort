@@ -47,7 +47,9 @@ func initializeDatabase(db *sql.DB) bool {
             uuid SERIAL PRIMARY KEY,
             shorturl TEXT UNIQUE NOT NULL,
             originalurl TEXT UNIQUE NOT NULL
-        )`
+        );
+		CREATE INDEX IF NOT EXISTS idx_originalurl ON shorturl (originalurl);
+		`
 
 	_, err := db.ExecContext(context.Background(), createTableSQL)
 	if err != nil {
