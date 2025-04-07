@@ -38,10 +38,6 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
-		storage.Sugar.Infoln("HandlePost: ", shortID,
-			"shortId: ", shortID,
-			"originalURL: ", originalURL,
-		)
 		if config.Config.Database != "" {
 			database.SaveDataBase(db, shortID, originalURL)
 		}
@@ -75,10 +71,6 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 			database.SaveDataBase(db, shortID, apiShorten.URL)
 		}
 		storage.StoreMux.Unlock()
-		storage.Sugar.Infoln("handleShortenPost: ", shortID,
-			"shortId: ", shortID,
-			"apiShorten.URL: ", apiShorten.URL,
-		)
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
