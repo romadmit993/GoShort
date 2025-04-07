@@ -46,6 +46,7 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 				w.Header().Set("Content-Type", "text/plain")
 				w.WriteHeader(http.StatusConflict)
 				fmt.Fprint(w, shortURL)
+				return
 			}
 		}
 		storage.StoreMux.Unlock()
@@ -89,6 +90,7 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 				if err := json.NewEncoder(w).Encode(response); err != nil {
 					http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
 				}
+				return
 			}
 		}
 		storage.StoreMux.Unlock()
