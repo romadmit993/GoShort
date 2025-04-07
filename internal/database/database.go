@@ -32,7 +32,7 @@ func SaveDataBase(db *sql.DB, shortURL, originalURL string) string {
 func CheckOriginalURLExists(db *sql.DB, originalURL string) (check bool, record string) {
 	row := db.QueryRowContext(
 		context.Background(),
-		"SELECT originalurl FROM shorturl WHERE originalurl = $1",
+		"SELECT shorturl FROM shorturl WHERE originalurl = $1",
 		originalURL,
 	)
 
