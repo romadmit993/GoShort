@@ -41,7 +41,6 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		storage.Sugar.Infoln("HandlePost: ", shortID,
 			"shortId: ", shortID,
 			"originalURL: ", originalURL,
-			"config.Config.Database: ", config.Config.Database,
 		)
 		if config.Config.Database != "" {
 			database.SaveDataBase(db, shortID, originalURL)
@@ -79,7 +78,6 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 		storage.Sugar.Infoln("handleShortenPost: ", shortID,
 			"shortId: ", shortID,
 			"apiShorten.URL: ", apiShorten.URL,
-			"config.Config.Database: ", config.Config.Database,
 		)
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
