@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"romadmit993/GoShort/internal/config"
@@ -27,7 +28,6 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
-
 		originalURL := string(body)
 		if !isValidURL(originalURL) {
 			http.Error(w, "Некорректный URL", http.StatusBadRequest)
@@ -38,11 +38,23 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
+
 		if config.Config.Database != "" {
-			database.SaveDataBase(db, shortID, originalURL)
+			log.Printf("Первая итерация HandlePost shortID %s", shortID)
+			log.Printf("Первая итерация HandlePost originalURL %s", originalURL)
+			rewrite := database.SaveDataBase(db, shortID, originalURL)
+			if rewrite != "" {
+				log.Printf("Запись есть в HandlePost shortID %s , rewrite: %s ", shortID, rewrite)
+				log.Printf("Запись есть в HandlePost originalURL %s", originalURL)
+				storage.StoreMux.Unlock()
+				shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, rewrite)
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusConflict)
+				fmt.Fprint(w, shortURL)
+				return
+			}
 		}
 		storage.StoreMux.Unlock()
-
 		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
@@ -68,9 +80,25 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 		storage.URLStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
 		if config.Config.Database != "" {
-			database.SaveDataBase(db, shortID, apiShorten.URL)
+			rewrite := database.SaveDataBase(db, shortID, apiShorten.URL)
+			if rewrite != "" {
+				storage.StoreMux.Unlock()
+				shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, rewrite)
+				response := models.Shorten{
+					Result: shortURL,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+				}
+				return
+			}
 		}
 		storage.StoreMux.Unlock()
+		log.Printf("test handleShortenPost shortID %s", shortID)
+		log.Printf("test handleShortenPost apiShorten.URL %s", apiShorten.URL)
+		log.Printf("test handleShortenPost config.Config.Database  %s", config.Config.Database)
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
