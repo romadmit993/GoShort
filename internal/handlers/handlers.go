@@ -38,9 +38,14 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.Lock()
 		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
+
 		if config.Config.Database != "" {
+			log.Printf("Первая итерация HandlePost shortID %s", shortID)
+			log.Printf("Первая итерация HandlePost originalURL %s", originalURL)
 			rewrite := database.SaveDataBase(db, shortID, originalURL)
 			if rewrite != "" {
+				log.Printf("Запись есть в HandlePost shortID %s , rewrite: %s ", shortID, rewrite)
+				log.Printf("Запись есть в HandlePost originalURL %s", originalURL)
 				storage.StoreMux.Unlock()
 				shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, rewrite)
 				w.Header().Set("Content-Type", "text/plain")
@@ -50,9 +55,6 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 			}
 		}
 		storage.StoreMux.Unlock()
-		log.Printf("test HandlePost shortID %s", shortID)
-		log.Printf("test HandlePost originalURL %s", originalURL)
-		log.Printf("test HandlePost config.Config.Database  %s", config.Config.Database)
 		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
