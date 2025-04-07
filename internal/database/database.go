@@ -19,10 +19,14 @@ func CheckConnectingDataBase(db *sql.DB) bool {
 	return true
 }
 
-func SaveDataBase(db *sql.DB, shortURL, originalURL string) error {
+func SaveDataBase(db *sql.DB, shortURL, originalURL string) string {
+	checkWrite := CheckOriginalURLExists(db, originalURL)
+	if checkWrite {
+		return shortURL
+	}
 	query := `INSERT INTO shorturl (shorturl, originalurl) VALUES ($1, $2)`
 	db.QueryRowContext(context.Background(), query, shortURL, originalURL)
-	return nil
+	return ""
 }
 
 func CheckOriginalURLExists(db *sql.DB, originalURL string) bool {

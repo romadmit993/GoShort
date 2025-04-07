@@ -39,7 +39,14 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		storage.URLStore[shortID] = originalURL
 		storage.SaveShortURLFile(shortID, originalURL)
 		if config.Config.Database != "" {
-			database.SaveDataBase(db, shortID, originalURL)
+			rewrite := database.SaveDataBase(db, shortID, originalURL)
+			if rewrite != "" {
+				storage.StoreMux.Unlock()
+				shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, rewrite)
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusConflict)
+				fmt.Fprint(w, shortURL)
+			}
 		}
 		storage.StoreMux.Unlock()
 		log.Printf("test HandlePost shortID %s", shortID)
@@ -70,7 +77,19 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 		storage.URLStore[shortID] = apiShorten.URL
 		storage.SaveShortURLFile(shortID, apiShorten.URL)
 		if config.Config.Database != "" {
-			database.SaveDataBase(db, shortID, apiShorten.URL)
+			rewrite := database.SaveDataBase(db, shortID, apiShorten.URL)
+			if rewrite != "" {
+				storage.StoreMux.Unlock()
+				shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, rewrite)
+				response := models.Shorten{
+					Result: shortURL,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					http.Error(w, "Ошибка при формировании ответа", http.StatusInternalServerError)
+				}
+			}
 		}
 		storage.StoreMux.Unlock()
 		log.Printf("test handleShortenPost shortID %s", shortID)
