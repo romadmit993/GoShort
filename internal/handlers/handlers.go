@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"romadmit993/GoShort/internal/config"
@@ -27,7 +28,7 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
-
+		log.Printf("test HandlePost")
 		originalURL := string(body)
 		if !isValidURL(originalURL) {
 			http.Error(w, "Некорректный URL", http.StatusBadRequest)
