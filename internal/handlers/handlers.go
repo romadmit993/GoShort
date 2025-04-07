@@ -44,7 +44,7 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		storage.StoreMux.Unlock()
 		log.Printf("test HandlePost shortID %s", shortID)
 		log.Printf("test HandlePost originalURL %s", originalURL)
-		log.Printf("config.Config.Database  %s", config.Config.Database)
+		log.Printf("test HandlePost config.Config.Database  %s", config.Config.Database)
 		shortURL := fmt.Sprintf("%s%s", config.Config.BaseAddress, shortID)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
@@ -73,9 +73,9 @@ func handleShortenPost(db *sql.DB) http.HandlerFunc {
 			database.SaveDataBase(db, shortID, apiShorten.URL)
 		}
 		storage.StoreMux.Unlock()
-		log.Printf("test HandlePost shortID %s", shortID)
-		log.Printf("test HandlePost apiShorten.URL %s", apiShorten.URL)
-		log.Printf("config.Config.Database  %s", config.Config.Database)
+		log.Printf("test handleShortenPost shortID %s", shortID)
+		log.Printf("test handleShortenPost apiShorten.URL %s", apiShorten.URL)
+		log.Printf("test handleShortenPost config.Config.Database  %s", config.Config.Database)
 		shortURL := fmt.Sprintf("%s/%s", config.Config.BaseAddress, shortID)
 		response := models.Shorten{
 			Result: shortURL,
