@@ -238,6 +238,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.QueryContext(context.Background(), "SELECT * from shorturl")
 		if err != nil {
+			log.Printf("Ошибка")
 			return
 		}
 		defer rows.Close()
