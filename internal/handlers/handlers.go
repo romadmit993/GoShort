@@ -236,7 +236,20 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("getUsersURL %s", r.Cookies())
+		rows, err := db.QueryContext(context.Background(), "SELECT * from videos")
+		if err != nil {
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var v models.AllRecord
+			err = rows.Scan(&v.Shorturl, &v.Originalurl)
+			if err != nil {
+				return
+			}
+			log.Printf("Shorturl %s", v.Shorturl)
+			log.Printf("Originalurl %s", v.Originalurl)
+		}
 	}
 	return http.HandlerFunc(fn)
 }

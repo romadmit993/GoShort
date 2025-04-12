@@ -14,3 +14,8 @@ type BatchResponse struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
+
+type AllRecord struct {
+	Shorturl    string `json:"shorturl"`
+	Originalurl string `json:"originalurl"`
+}
