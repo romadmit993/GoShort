@@ -248,6 +248,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			var v models.AllRecord
 			err = rows.Scan(&v.Shorturl, &v.Originalurl)
 			if err != nil {
+				log.Printf("нет данных")
 				return
 			}
 			log.Printf("Shorturl %s", v.Shorturl)
