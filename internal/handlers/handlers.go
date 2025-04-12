@@ -236,7 +236,7 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.QueryContext(context.Background(), "SELECT * from videos")
+		rows, err := db.QueryContext(context.Background(), "SELECT * from shorturl")
 		if err != nil {
 			return
 		}
