@@ -234,6 +234,13 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func getUsersURL(db *sql.DB) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("getUsersURL %s", r.Cookies())
+	}
+	return http.HandlerFunc(fn)
+}
+
 func TestRouter(db *sql.DB) chi.Router {
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.CleanPath)
@@ -244,6 +251,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Post("/api/shorten/batch", customMiddleware.WithLogging(handleBatchPost(db)))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing(db)))
+	r.Get("/api/user/urls", customMiddleware.WithLogging(getUsersURL(db)))
 	return r
 }
 
