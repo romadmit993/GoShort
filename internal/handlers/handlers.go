@@ -236,9 +236,11 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.QueryContext(context.Background(), "SELECT * from shorturl")
+		rows, _ := db.QueryContext(context.Background(), "SELECT * from shorturl")
+		log.Printf("После выборки")
+		err := rows.Err()
 		if err != nil {
-			log.Printf("Ошибка")
+			log.Printf("Ошибка выборки")
 			return
 		}
 		defer rows.Close()
