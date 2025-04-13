@@ -249,8 +249,6 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		for rows.Next() {
 			var v models.AllRecord
 			rows.Scan(&v.Shorturl, &v.Originalurl)
-			log.Printf("Shorturl %s", v.Shorturl)
-			log.Printf("Originalurl %s", v.Originalurl)
 			checktesturl = v.Shorturl
 			results = append(results, models.AllRecord{
 				Shorturl:    fmt.Sprintf("%s/%s", config.Config.BaseAddress, v.Shorturl),
@@ -258,9 +256,12 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			})
 		}
 		if checktesturl == "" {
-			//w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNoContent)
 		} else {
+			for i := 0; i < len(results); i++ {
+				log.Printf("Shorturl %v %s", i, results[i].Originalurl)
+				log.Printf("Originalurl %v %s", i, results[i].Shorturl)
+			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(results)
