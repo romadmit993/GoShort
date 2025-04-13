@@ -236,7 +236,7 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		rows, _ := db.QueryContext(context.Background(), "SELECT * from shorturl")
+		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
 		log.Printf("После выборки")
 		err := rows.Err()
 		if err != nil {
@@ -246,12 +246,12 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		defer rows.Close()
 		for rows.Next() {
 			var v models.AllRecord
-			err = rows.Scan(&v.Shorturl, &v.Originalurl)
-			if err != nil {
-				http.Error(w, "нет данных", http.StatusNoContent)
-				log.Printf("log нет данных")
-				return
-			}
+			rows.Scan(&v.Shorturl, &v.Originalurl)
+			// if err != nil {
+			// 	http.Error(w, "нет данных", http.StatusNoContent)
+			// 	log.Printf("log нет данных")
+			// 	return
+			// }
 			log.Printf("Shorturl %s", v.Shorturl)
 			log.Printf("Originalurl %s", v.Originalurl)
 		}
