@@ -150,7 +150,7 @@ func handleBatchPost(db *sql.DB) http.HandlerFunc {
 			if config.Config.Database != "" {
 				_, err = tx.ExecContext(
 					r.Context(),
-					"INSERT INTO shorturl (shorturl, originalurl, user_id) VALUES ($1, $2)",
+					"INSERT INTO shorturl (shorturl, originalurl) VALUES ($1, $2)",
 					shortID,
 					item.OriginalURL,
 				)
