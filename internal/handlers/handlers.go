@@ -236,13 +236,6 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		// userID, ok := r.Context().Value("uuid").(string)
-		// if !ok || userID == "" {
-		// 	w.WriteHeader(http.StatusNoContent)
-		// 	return
-		// }
-
-		log.Printf("USER uuid %s", r.Context())
 		log.Printf("USER uuid value %s", r.Context().Value("UUID").(string))
 
 		results := make([]models.AllRecord, 0)
@@ -265,6 +258,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			})
 		}
 		if checktesturl == "" {
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNoContent)
 		} else {
 			for i := 0; i < len(results); i++ {
