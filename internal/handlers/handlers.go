@@ -236,8 +236,6 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("USER uuid value %s", r.Context().Value("UUID").(string))
-
 		results := make([]models.AllRecord, 0)
 		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
 		log.Printf("После выборки")
