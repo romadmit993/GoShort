@@ -13,6 +13,7 @@ import (
 	customMiddleware "romadmit993/GoShort/internal/middleware"
 	"romadmit993/GoShort/internal/models"
 	"romadmit993/GoShort/internal/storage"
+	"strings"
 
 	"database/sql"
 
@@ -149,7 +150,7 @@ func handleBatchPost(db *sql.DB) http.HandlerFunc {
 			if config.Config.Database != "" {
 				_, err = tx.ExecContext(
 					r.Context(),
-					"INSERT INTO shorturl (shorturl, originalurl) VALUES ($1, $2)",
+					"INSERT INTO shorturl (shorturl, originalurl, user_id) VALUES ($1, $2)",
 					shortID,
 					item.OriginalURL,
 				)
@@ -236,36 +237,36 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		results := make([]models.AllRecord, 0)
-		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
-		log.Printf("После выборки")
-		err := rows.Err()
-		if err != nil {
-			log.Printf("Ошибка выборки")
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok || userID == "" {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		results := make([]models.AllRecord, 0)
+		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
+		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
 		defer rows.Close()
-		var checktesturl string
 		for rows.Next() {
 			var v models.AllRecord
-			rows.Scan(&v.Shorturl, &v.Originalurl)
-			checktesturl = v.Shorturl
+			if err := rows.Scan(&v.Shorturl, &v.Originalurl); err != nil {
+				log.Printf("Ошибка чтения строки: %v", err)
+				continue
+			}
 			results = append(results, models.AllRecord{
-				Shorturl:    fmt.Sprintf("%s/%s", config.Config.BaseAddress, v.Shorturl),
+				Shorturl:    fmt.Sprintf("%s/%s", baseURL, v.Shorturl),
 				Originalurl: v.Originalurl,
 			})
 		}
-		if checktesturl == "" {
-			w.Header().Set("Content-Type", "application/json")
+
+		if len(results) == 0 {
 			w.WriteHeader(http.StatusNoContent)
-		} else {
-			for i := 0; i < len(results); i++ {
-				log.Printf("Shorturl %v %s", i, results[i].Originalurl)
-				log.Printf("Originalurl %v %s", i, results[i].Shorturl)
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(results)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(results); err != nil {
+			log.Printf("Ошибка кодирования JSON: %v", err)
 		}
 	}
 	return http.HandlerFunc(fn)
