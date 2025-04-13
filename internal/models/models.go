@@ -16,6 +16,6 @@ type BatchResponse struct {
 }
 
 type AllRecord struct {
-	Shorturl    string `json:"shorturl"`
-	Originalurl string `json:"originalurl"`
+	Shorturl    string `json:"short_url"`
+	Originalurl string `json:"original_url"`
 }

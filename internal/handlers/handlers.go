@@ -236,6 +236,7 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		results := make([]models.AllRecord, 0)
 		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
 		log.Printf("После выборки")
 		err := rows.Err()
@@ -244,16 +245,25 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		defer rows.Close()
+		var checktesturl string
 		for rows.Next() {
 			var v models.AllRecord
 			rows.Scan(&v.Shorturl, &v.Originalurl)
-			// if err != nil {
-			// 	http.Error(w, "нет данных", http.StatusNoContent)
-			// 	log.Printf("log нет данных")
-			// 	return
-			// }
 			log.Printf("Shorturl %s", v.Shorturl)
 			log.Printf("Originalurl %s", v.Originalurl)
+			checktesturl = v.Shorturl
+			results = append(results, models.AllRecord{
+				Shorturl:    fmt.Sprintf("%s/%s", config.Config.BaseAddress, v.Shorturl),
+				Originalurl: v.Originalurl,
+			})
+		}
+		if checktesturl == "" {
+			//w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(results)
 		}
 	}
 	return http.HandlerFunc(fn)
