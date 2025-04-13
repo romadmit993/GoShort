@@ -239,7 +239,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value("ID").(string)
 		if !ok || userID == "" {
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		log.Printf("ID Пользователя %s", userID)
