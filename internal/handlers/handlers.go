@@ -262,7 +262,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			w.WriteHeader(http.StatusNoContent)
 		} else {
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
+			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(results)
 		}
 	}
