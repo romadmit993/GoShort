@@ -236,13 +236,14 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value("uuid").(string)
-		if !ok || userID == "" {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+		// userID, ok := r.Context().Value("uuid").(string)
+		// if !ok || userID == "" {
+		// 	w.WriteHeader(http.StatusNoContent)
+		// 	return
+		// }
 
-		log.Printf("USER uuid %s", userID)
+		log.Printf("USER uuid %s", r.Context())
+		log.Printf("USER uuid value %s", r.Context().Value("UUID").(string))
 
 		results := make([]models.AllRecord, 0)
 		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
