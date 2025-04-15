@@ -274,10 +274,10 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		_, err := r.Cookie("token")
 		if err != nil {
 			log.Printf("Нет кукки")
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-
+		log.Printf("Есть кукки")
 		results := make([]models.AllRecord, 0)
 		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
 		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
@@ -298,12 +298,16 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNoContent)
 			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(results); err != nil {
-			log.Printf("Ошибка кодирования JSON: %v", err)
+		} else {
+			for _, k := range results {
+				log.Printf("SHORT %s", k.Shorturl)
+				log.Printf("ORIGINAL %s", k.Originalurl)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(results); err != nil {
+				log.Printf("Ошибка кодирования JSON: %v", err)
+			}
 		}
 	}
 	return http.HandlerFunc(fn)
