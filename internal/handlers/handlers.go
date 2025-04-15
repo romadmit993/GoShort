@@ -279,7 +279,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		}
 		log.Printf("Есть кукки")
 		results := make([]models.AllRecord, 0)
-		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
+		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
 		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
 		defer rows.Close()
 		for rows.Next() {
