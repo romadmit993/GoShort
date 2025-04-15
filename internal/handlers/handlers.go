@@ -273,6 +273,12 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		_, err := r.Cookie("token")
 		if err != nil {
+			tokenString, _ := BuildJWTString()
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   tokenString,
+				Expires: time.Now().Add(25 * time.Minute),
+			})
 			log.Printf("Нет кукки")
 			w.WriteHeader(http.StatusNoContent)
 			return
