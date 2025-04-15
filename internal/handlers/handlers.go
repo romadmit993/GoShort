@@ -48,14 +48,14 @@ func BuildJWTString() (string, error) {
 func HandlePost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 
-		//14 инкримент
-		tokenString, _ := BuildJWTString()
-		http.SetCookie(w, &http.Cookie{
-			Name:    "token",
-			Value:   tokenString,
-			Expires: time.Now().Add(25 * time.Minute),
-		})
-		//конец 14 инкримента
+		// //14 инкримент
+		// tokenString, _ := BuildJWTString()
+		// http.SetCookie(w, &http.Cookie{
+		// 	Name:    "token",
+		// 	Value:   tokenString,
+		// 	Expires: time.Now().Add(25 * time.Minute),
+		// })
+		// //конец 14 инкримента
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
