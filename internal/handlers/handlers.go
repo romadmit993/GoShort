@@ -52,7 +52,7 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   tokenString,
-			Expires: time.Now().Add(25 * time.Minute),
+			Expires: time.Now().Add(24 * time.Minute),
 		})
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -274,7 +274,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			http.SetCookie(w, &http.Cookie{
 				Name:    "token",
 				Value:   tokenString,
-				Expires: time.Now().Add(25 * time.Minute),
+				Expires: time.Now().Add(24 * time.Minute),
 			})
 			log.Printf("Нет кукки")
 			w.WriteHeader(http.StatusNoContent)
