@@ -15,13 +15,45 @@ import (
 	"romadmit993/GoShort/internal/storage"
 
 	"database/sql"
+	"strings"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID int
+}
+
+const TokenExp = time.Hour * 3
+const SecretKey = "supersecretkey"
+
+func BuildJWTString() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
+		},
+		UserID: 1,
+	})
+	tokenString, err := token.SignedString([]byte(SecretKey))
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
 func HandlePost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+
+		tokenString, _ := BuildJWTString()
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: time.Now().Add(25 * time.Minute),
+		})
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
@@ -234,6 +266,56 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(fn)
 }
 
+func getUsersURL(db *sql.DB) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		_, err := r.Cookie("token")
+		if err != nil {
+			tokenString, _ := BuildJWTString()
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   tokenString,
+				Expires: time.Now().Add(25 * time.Minute),
+			})
+			log.Printf("Нет кукки")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		log.Printf("Есть кукки")
+		results := make([]models.AllRecord, 0)
+		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
+		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
+		defer rows.Close()
+		for rows.Next() {
+			var v models.AllRecord
+			if err := rows.Scan(&v.Shorturl, &v.Originalurl); err != nil {
+				log.Printf("Ошибка чтения строки: %v", err)
+				continue
+			}
+			results = append(results, models.AllRecord{
+				Shorturl:    fmt.Sprintf("%s/%s", baseURL, v.Shorturl),
+				Originalurl: v.Originalurl,
+			})
+		}
+
+		if len(results) == 0 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		} else {
+			for _, k := range results {
+				log.Printf("SHORT %s", k.Shorturl)
+				log.Printf("ORIGINAL %s", k.Originalurl)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(results); err != nil {
+				log.Printf("Ошибка кодирования JSON: %v", err)
+			}
+		}
+	}
+	return http.HandlerFunc(fn)
+}
+
 func TestRouter(db *sql.DB) chi.Router {
 	r := chi.NewRouter()
 	r.Use(chiMiddleware.CleanPath)
@@ -244,6 +326,7 @@ func TestRouter(db *sql.DB) chi.Router {
 	r.Post("/api/shorten/batch", customMiddleware.WithLogging(handleBatchPost(db)))
 	r.Get("/{id}", customMiddleware.WithLogging(HandleGet(db)))
 	r.Get("/ping", customMiddleware.WithLogging(handleGetPing(db)))
+	r.Get("/api/user/urls", customMiddleware.WithLogging(getUsersURL(db)))
 	return r
 }
 

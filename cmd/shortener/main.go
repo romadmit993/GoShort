@@ -18,6 +18,7 @@ func main() {
 	config.ParseFlags()
 	var db *sql.DB
 	var err error
+	//connecting
 	if config.Config.Database != "" {
 		db, err = sql.Open("pgx", config.Config.Database)
 		if err != nil {
