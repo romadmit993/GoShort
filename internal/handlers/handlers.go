@@ -13,16 +13,49 @@ import (
 	customMiddleware "romadmit993/GoShort/internal/middleware"
 	"romadmit993/GoShort/internal/models"
 	"romadmit993/GoShort/internal/storage"
-	"strings"
 
 	"database/sql"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID int
+}
+
+const TOKEN_EXP = time.Hour * 3
+const SECRET_KEY = "supersecretkey"
+
+func BuildJWTString() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+		},
+		UserID: 1,
+	})
+	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
 func HandlePost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+
+		//14 инкримент
+		tokenString, _ := BuildJWTString()
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: time.Now().Add(25 * time.Minute),
+		})
+		//конец 14 инкримента
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
@@ -237,38 +270,66 @@ func handleGetPing(db *sql.DB) http.HandlerFunc {
 
 func getUsersURL(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value("ID").(string)
-		if !ok || userID == "" {
-			w.WriteHeader(http.StatusNoContent)
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			log.Printf("Нет кукки")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		log.Printf("ID Пользователя %s", userID)
-		results := make([]models.AllRecord, 0)
-		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
-		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
-		defer rows.Close()
-		for rows.Next() {
-			var v models.AllRecord
-			if err := rows.Scan(&v.Shorturl, &v.Originalurl); err != nil {
-				log.Printf("Ошибка чтения строки: %v", err)
-				continue
-			}
-			results = append(results, models.AllRecord{
-				Shorturl:    fmt.Sprintf("%s/%s", baseURL, v.Shorturl),
-				Originalurl: v.Originalurl,
-			})
-		}
-
-		if len(results) == 0 {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
+		log.Printf("Есть кукки %s", cookie)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(results); err != nil {
-			log.Printf("Ошибка кодирования JSON: %v", err)
-		}
+		// Пытаемся получить токен из куков
+		// cookie, err := r.Cookie("token")
+		// if err != nil {
+		// 	tokenString, err := BuildJWTString()
+		// 	if err != nil {
+		// 		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		// 		return
+		// 	}
+
+		// 	http.SetCookie(w, &http.Cookie{
+		// 		Name:    "token",
+		// 		Value:   tokenString,
+		// 		Expires: time.Now().Add(TOKEN_EXP),
+		// 		Path:    "/",
+		// 	})
+		// }
+
+		// userID, ok := r.Context().Value("ID").(string)
+		// if !ok || userID == "" {
+		// 	w.Header().Set("Content-Type", "application/json")
+		// 	w.WriteHeader(http.StatusNoContent)
+		// 	return
+		// }
+		// log.Printf("ID Пользователя %s", userID)
+		// results := make([]models.AllRecord, 0)
+		// rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl")
+		// baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
+		// defer rows.Close()
+		// for rows.Next() {
+		// 	var v models.AllRecord
+		// 	if err := rows.Scan(&v.Shorturl, &v.Originalurl); err != nil {
+		// 		log.Printf("Ошибка чтения строки: %v", err)
+		// 		continue
+		// 	}
+		// 	results = append(results, models.AllRecord{
+		// 		Shorturl:    fmt.Sprintf("%s/%s", baseURL, v.Shorturl),
+		// 		Originalurl: v.Originalurl,
+		// 	})
+		// }
+
+		// if len(results) == 0 {
+		// 	w.Header().Set("Content-Type", "application/json")
+		// 	w.WriteHeader(http.StatusNoContent)
+		// 	return
+		// }
+
+		// w.Header().Set("Content-Type", "application/json")
+		// w.WriteHeader(http.StatusOK)
+		// if err := json.NewEncoder(w).Encode(results); err != nil {
+		// 	log.Printf("Ошибка кодирования JSON: %v", err)
+		// }
 	}
 	return http.HandlerFunc(fn)
 }
