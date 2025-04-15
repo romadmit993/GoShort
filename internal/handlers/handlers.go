@@ -47,6 +47,13 @@ func BuildJWTString() (string, error) {
 }
 func HandlePost(db *sql.DB) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+
+		tokenString, _ := BuildJWTString()
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: time.Now().Add(25 * time.Minute),
+		})
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Ошибка чтения тела запроса", http.StatusBadRequest)
