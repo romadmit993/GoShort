@@ -52,7 +52,7 @@ func HandlePost(db *sql.DB) http.HandlerFunc {
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   tokenString,
-			Expires: time.Now().Add(25 * time.Minute),
+			Expires: time.Now().Add(24 * time.Minute),
 		})
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -274,7 +274,7 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 			http.SetCookie(w, &http.Cookie{
 				Name:    "token",
 				Value:   tokenString,
-				Expires: time.Now().Add(25 * time.Minute),
+				Expires: time.Now().Add(24 * time.Minute),
 			})
 			log.Printf("Нет кукки")
 			w.WriteHeader(http.StatusNoContent)
@@ -282,7 +282,13 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		}
 		log.Printf("Есть кукки")
 		results := make([]models.AllRecord, 0)
-		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
+		rows, err := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
+		if err != nil {
+			log.Printf("Нет данных")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
 		defer rows.Close()
 		for rows.Next() {
