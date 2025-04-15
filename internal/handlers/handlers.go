@@ -282,11 +282,11 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		}
 		log.Printf("Есть кукки")
 		results := make([]models.AllRecord, 0)
-		rows, err := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
-		if err != nil {
-			log.Printf("Нет данных")
+		rows, _ := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
+		if err := rows.Err(); err != nil {
+			log.Printf("Ошибка при обработке результатов: %v", err)
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
