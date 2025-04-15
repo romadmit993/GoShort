@@ -285,6 +285,9 @@ func getUsersURL(db *sql.DB) http.HandlerFunc {
 		rows, err := db.QueryContext(context.Background(), "SELECT shorturl, originalurl from shorturl WHERE uuid = 6")
 		if err != nil {
 			log.Printf("Нет данных")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			return
 		}
 		baseURL := strings.TrimSuffix(config.Config.BaseAddress, "/")
 		defer rows.Close()
